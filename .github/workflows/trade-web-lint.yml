@@ -1,0 +1,27 @@
+name: Trade Pull Verify Lint
+
+on:
+  push:
+    branches: [ main, "codex/**" ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  trade-pull-verify-php74:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "7.4"
+          coverage: none
+
+      - name: Lint pull verifier
+        shell: bash
+        run: php -l deploy/nas/pull_verify_trade.php
