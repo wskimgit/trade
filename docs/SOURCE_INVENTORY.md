@@ -12,28 +12,24 @@ Current ChatGPT → Codex handoff inventory.
 | src/trade_runner_control.php | v1.4.5 / startup-health-detail r3 | IMPORTED |
 | src/trade_dashboard.php | v3.4.8 / trade-dashboard-v348-alert-ack-state-machine-20260922-r1 | IMPORTED |
 | src/trade_3plus1_preflight.php | v1.3.13 / trade-3plus1-preflight-v1313-dashboard-alert-ack-contract-20260922-r1 | IMPORTED |
+| src/trade_validation.php | v1.3.1 / trade-validation-v131-explicit-legacy-recovery-wal-20260921-r1 | IMPORTED |
 | src/trade_list.php | v1.9.0 / trade_universe_contract_v2 | IMPORTED |
 | src/dts.php | dts-v254-market-timezone-hard-stale-recovery-contract-20260912-r1 | IMPORTED |
 | src/abc.php | abc-v542-market-timezone-bar-date-20260912-r1 | IMPORTED |
 | src/das.php | das-v303-market-timezone-data-timestamp-20260912-r1 | IMPORTED |
 | src/stc26.php | stc26-v301-daily-opportunity-shadow-20260910-r1 | IMPORTED |
 
-## Pending exact source
+The frozen source set needed for the ChatGPT → Codex handoff is now present in `src/`.
 
-| File | Required identity | Status |
-|---|---|---|
-| src/trade_validation.php | v1.3.1 / trade-validation-v131-explicit-legacy-recovery-wal-20260921-r1 | PENDING IMPORT |
+## Codex source rule
 
-The exact v1.3.1 Validation source is known from the final verified deployment package, but has not yet been placed in this public repository as a standalone source file.
+Use the exact files in `src/` as the starting baseline.
 
-**Do not substitute an older v1.2.6 Validation file. Do not reconstruct or invent the missing source.**
-
-Until the exact v1.3.1 file is imported:
-
-- repository-local full Preflight is expected to be incomplete,
-- Codex may inspect and improve unrelated files,
-- Codex must not make Validation semantic changes,
-- Codex must not claim the whole frozen source set is complete.
+- Do not substitute an older Validation v1.2.6 file.
+- Do not mix older Engine/Broker/Runner/Dashboard revisions into a change.
+- Preserve PHP 7.4 compatibility.
+- Keep `SINGLE_FILE_PAPER` and `REAL=false` as the frozen execution authority unless a separate migration is explicitly approved.
+- Do not reintroduce SWING.
 
 ## Intentionally excluded
 
