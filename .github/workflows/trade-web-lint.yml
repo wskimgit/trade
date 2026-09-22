@@ -29,6 +29,3 @@ jobs:
           for f in deploy/trade_web/*.php; do
             php -l "$f"
           done
-
-      - name: Run installer self-test
-        run: php deploy/trade_web/install_trade_web.php --selftest

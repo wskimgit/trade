@@ -100,12 +100,27 @@ function tw_normalize_path(string $path): string
     return $path;
 }
 
-function tw_web_root(): string
+function tw_allowed_parent(): string
 {
-    $root = tw_normalize_path(tw_env('TRADE_WEB_ROOT', TW_DEFAULT_WEB_ROOT));
+    $parent = tw_normalize_path(tw_env('TRADE_ALLOWED_PARENT', '/volume1/web'));
+    if ($parent === '/' || !is_dir($parent)) {
+        tw_fail('ALLOWED_PARENT_DIRECTORY_INVALID', $parent);
+    }
+    return $parent;
+}
+
+function tw_web_root(string $requested = ''): string
+{
+    $raw = trim($requested) !== '' ? trim($requested) : tw_env('TRADE_WEB_ROOT', TW_DEFAULT_WEB_ROOT);
+    $root = tw_normalize_path($raw);
     $blocked = array('/', '/volume1', '/volume1/web');
     if (in_array($root, $blocked, true)) {
         tw_fail('UNSAFE_WEB_ROOT', $root);
+    }
+    $parent = tw_allowed_parent();
+    $prefix = rtrim($parent, '/') . '/';
+    if ($root === $parent || strpos($root, $prefix) !== 0) {
+        tw_fail('WEB_ROOT_OUTSIDE_ALLOWED_PARENT', $root);
     }
     if (!is_dir(dirname($root))) {
         tw_fail('WEB_PARENT_DIRECTORY_MISSING', dirname($root));
@@ -243,7 +258,9 @@ function tw_token(string $root): string
     }
     $file = tw_normalize_path($file);
     $rootPrefix = rtrim($root, '/') . '/';
-    if (strpos($file, $rootPrefix) === 0) {
+    $allowedPrefix = rtrim(tw_allowed_parent(), '/') . '/';
+    if ($file === $root || strpos($file, $rootPrefix) === 0
+        || $file === tw_allowed_parent() || strpos($file, $allowedPrefix) === 0) {
         tw_fail('TOKEN_FILE_MUST_BE_OUTSIDE_WEB_ROOT');
     }
     if (!is_file($file) || !is_readable($file)) {
@@ -349,7 +366,7 @@ function tw_target_entries(string $root): array
     }));
 }
 
-function tw_prepare_target(string $root): bool
+function tw_prepare_target(string $root, bool $allowReinstall = false): bool
 {
     if (is_link($root) || (file_exists($root) && !is_dir($root))) {
         tw_fail('WEB_ROOT_NOT_DIRECTORY', $root);
@@ -376,8 +393,8 @@ function tw_prepare_target(string $root): bool
         || ($state['managed_by'] ?? '') !== TW_MANAGED_BY) {
         tw_fail('EXISTING_TARGET_NOT_MANAGED');
     }
-    if (!tw_bool_env('TRADE_ALLOW_REINSTALL', false)) {
-        tw_fail('REINSTALL_REQUIRES_TRADE_ALLOW_REINSTALL');
+    if (!$allowReinstall) {
+        tw_fail('REINSTALL_REQUIRES_EXPLICIT_WEB_CONFIRMATION');
     }
     $marker = tw_read_json($root . '/trade_phase3b_lite_v100/authority.json');
     if (!is_array($marker)
@@ -471,13 +488,13 @@ function tw_commit_stage(string $root, string $stage, array $items, array $expec
     }
 }
 
-function tw_install(): int
+function tw_install(string $requestedRoot = '', bool $allowReinstall = false, string $requestedRef = ''): int
 {
-    $root = tw_web_root();
-    $isUpdate = tw_prepare_target($root);
+    $root = tw_web_root($requestedRoot);
+    $isUpdate = tw_prepare_target($root, $allowReinstall);
     $repository = tw_env('TRADE_GITHUB_REPOSITORY', TW_DEFAULT_REPOSITORY);
     $token = tw_token($root);
-    $requested = tw_env('TRADE_GITHUB_REF');
+    $requested = $requestedRef !== '' ? $requestedRef : tw_env('TRADE_GITHUB_REF');
     $resolved = tw_resolve_commit($repository, $requested, $token);
     $commit = $resolved['commit_sha'];
 
@@ -575,43 +592,245 @@ function tw_install(): int
     }
 }
 
-function tw_selftest(): int
+function tw_post_value(string $name): string
 {
-    $result = array(
-        'ok' => true,
-        'installer_version' => TW_INSTALLER_VERSION,
-        'default_repository' => TW_DEFAULT_REPOSITORY,
-        'default_web_root' => TW_DEFAULT_WEB_ROOT,
-        'source_file_count' => count(TW_SOURCE_FILES),
-        'runtime_directory_count' => count(TW_RUNTIME_DIRS),
-        'cli_only' => true,
-        'real_order_allowed' => false,
-    );
-    echo tw_json($result, true) . PHP_EOL;
-    return 0;
+    $value = $_POST[$name] ?? '';
+    return is_string($value) ? $value : '';
 }
 
-function tw_main(array $argv): int
+function tw_web_start_session(): void
 {
-    if (PHP_SAPI !== 'cli') {
-        http_response_code(405);
-        echo 'CLI_ONLY' . PHP_EOL;
-        return 1;
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        return;
     }
-    $command = strtolower((string)($argv[1] ?? 'install'));
-    if ($command === '--selftest' || $command === 'selftest') {
-        return tw_selftest();
+    $secure = !empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off';
+    @session_name('trade_web_installer');
+    @session_set_cookie_params(array(
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => $secure,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ));
+    if (!@session_start()) {
+        tw_fail('WEB_SESSION_START_FAILED');
     }
-    if ($command !== 'install' && $command !== '--install') {
-        fwrite(STDERR, "Usage: php install_trade_web.php [install|--selftest]" . PHP_EOL);
-        return 2;
+    if (empty($_SESSION['trade_web_csrf'])) {
+        $_SESSION['trade_web_csrf'] = bin2hex(random_bytes(32));
     }
+}
+
+function tw_web_csrf(): string
+{
+    $token = $_SESSION['trade_web_csrf'] ?? '';
+    if (!is_string($token) || $token === '') {
+        tw_fail('WEB_CSRF_NOT_READY');
+    }
+    return $token;
+}
+
+function tw_web_secret(): string
+{
+    $inline = tw_env('TRADE_WEB_INSTALL_SECRET');
+    $file = tw_env('TRADE_WEB_INSTALL_SECRET_FILE');
+    if ($inline !== '' && $file !== '') {
+        tw_fail('WEB_SECRET_SOURCE_AMBIGUOUS');
+    }
+    if ($inline !== '') {
+        return $inline;
+    }
+    if ($file === '') {
+        tw_fail('WEB_INSTALL_SECRET_NOT_CONFIGURED');
+    }
+    $file = tw_normalize_path($file);
+    $parent = tw_allowed_parent();
+    $parentPrefix = rtrim($parent, '/') . '/';
+    if ($file === $parent || strpos($file, $parentPrefix) === 0) {
+        tw_fail('WEB_SECRET_FILE_MUST_BE_OUTSIDE_ALLOWED_PARENT');
+    }
+    if (!is_file($file) || !is_readable($file)) {
+        tw_fail('WEB_SECRET_FILE_NOT_READABLE', $file);
+    }
+    $secret = trim((string)@file_get_contents($file));
+    if ($secret === '') {
+        tw_fail('WEB_INSTALL_SECRET_EMPTY');
+    }
+    return $secret;
+}
+
+function tw_web_secret_ready(): bool
+{
     try {
-        return tw_install();
+        return tw_web_secret() !== '';
     } catch (Throwable $error) {
-        fwrite(STDERR, 'ERROR ' . $error->getMessage() . PHP_EOL);
-        return 1;
+        return false;
     }
 }
 
-exit(tw_main($argv ?? array()));
+function tw_web_authenticate(): void
+{
+    $secret = tw_web_secret();
+    $provided = tw_post_value('installer_key');
+    if ($provided === '') {
+        tw_fail('WEB_INSTALL_KEY_REQUIRED');
+    }
+    $expectedHash = hash('sha256', $secret);
+    $providedHash = hash('sha256', $provided);
+    if (!hash_equals($expectedHash, $providedHash)) {
+        tw_fail('WEB_INSTALL_KEY_INVALID');
+    }
+}
+
+function tw_web_ref(string $value): string
+{
+    $value = trim($value);
+    if ($value === '') {
+        $value = tw_env('TRADE_GITHUB_REF', TW_DEFAULT_BRANCH);
+    }
+    if (strlen($value) > 200 || strpos($value, '..') !== false
+        || !preg_match('/^[A-Za-z0-9._\/-]+$/', $value)) {
+        tw_fail('GITHUB_REF_INVALID');
+    }
+    return $value;
+}
+
+function tw_web_target_status(string $root): array
+{
+    if (!is_dir($root)) {
+        return array('label' => 'NEW_TARGET', 'commit' => '', 'mode' => '');
+    }
+    $state = tw_read_json($root . '/trade_install_state.json');
+    if (!is_array($state)) {
+        $entries = tw_target_entries($root);
+        return array(
+            'label' => count($entries) === 0 ? 'EMPTY_TARGET' : 'UNMANAGED_OR_NONEMPTY',
+            'commit' => '',
+            'mode' => '',
+        );
+    }
+    return array(
+        'label' => 'MANAGED_TARGET',
+        'commit' => (string)($state['source_commit'] ?? ''),
+        'mode' => (string)($state['mode'] ?? ''),
+    );
+}
+
+function tw_h(string $value): string
+{
+    return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function tw_web_render(array $form, string $message = '', string $error = ''): void
+{
+    $root = (string)($form['web_root'] ?? tw_env('TRADE_WEB_ROOT', TW_DEFAULT_WEB_ROOT));
+    $ref = (string)($form['github_ref'] ?? tw_env('TRADE_GITHUB_REF', TW_DEFAULT_BRANCH));
+    $confirm = (string)($form['confirm_target'] ?? '');
+    $allowReinstall = !empty($form['allow_reinstall']);
+    $action = tw_h((string)($_SERVER['SCRIPT_NAME'] ?? ''));
+    $status = array('label' => 'UNKNOWN', 'commit' => '', 'mode' => '');
+    try {
+        $status = tw_web_target_status(tw_web_root($root));
+    } catch (Throwable $statusError) {
+        $status['label'] = 'INVALID_TARGET';
+    }
+    $secretReady = tw_web_secret_ready();
+    $csrf = tw_h(tw_web_csrf());
+
+    header('Content-Type: text/html; charset=UTF-8');
+    echo '<!doctype html><html lang="ko"><head><meta charset="utf-8">';
+    echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
+    echo '<meta http-equiv="Cache-Control" content="no-store">';
+    echo '<title>Trade Web Installer</title>';
+    echo '<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:760px;margin:32px auto;padding:0 16px;color:#202124;background:#f7f8fa}main{background:#fff;border:1px solid #d8dce3;border-radius:12px;padding:24px;box-shadow:0 2px 8px #0000000d}h1{font-size:22px;margin-top:0}label{display:block;font-weight:600;margin-top:16px}input[type=text],input[type=password]{box-sizing:border-box;width:100%;margin-top:6px;padding:10px;border:1px solid #b8bec8;border-radius:7px;font-size:14px}input[type=checkbox]{margin-right:8px}.hint{color:#5f6368;font-size:13px;line-height:1.5}.ok{background:#e6f4ea;color:#137333;padding:10px;border-radius:7px;margin:12px 0}.err{background:#fce8e6;color:#a50e0e;padding:10px;border-radius:7px;margin:12px 0}.warn{background:#fff4ce;color:#7a4f01;padding:10px;border-radius:7px;margin:12px 0}button{margin-top:22px;background:#1a73e8;color:#fff;border:0;border-radius:7px;padding:11px 16px;font-weight:600;cursor:pointer}.mono{font-family:ui-monospace,SFMono-Regular,monospace;word-break:break-all}</style>';
+    echo '</head><body><main><h1>Trade 독립 웹 설치</h1>';
+    echo '<p class="hint">기존 /web과 분리된 NAS 폴더에 GitHub 소스를 내려받아 저장합니다. 이 화면은 POST와 설치 키가 모두 필요합니다.</p>';
+    if ($message !== '') {
+        echo '<div class="ok"><pre>' . tw_h($message) . '</pre></div>';
+    }
+    if ($error !== '') {
+        echo '<div class="err"><b>설치 중단</b><pre>' . tw_h($error) . '</pre></div>';
+    }
+    echo '<div class="warn">현재 권한: ' . ($secretReady ? '설치 키 설정됨' : '설치 키 미설정 — 서버 환경변수 또는 외부 secret 파일을 먼저 설정해야 함') . '</div>';
+    echo '<p class="hint">현재 대상 상태: <b>' . tw_h((string)$status['label']) . '</b>';
+    if ($status['commit'] !== '') {
+        echo ' · commit <span class="mono">' . tw_h($status['commit']) . '</span>';
+    }
+    if ($status['mode'] !== '') {
+        echo ' · mode ' . tw_h($status['mode']);
+    }
+    echo '</p>';
+    echo '<form method="post" action="' . $action . '">';
+    echo '<input type="hidden" name="csrf" value="' . $csrf . '">';
+    echo '<label>저장할 NAS 폴더';
+    echo '<input type="text" name="web_root" value="' . tw_h($root) . '" required>';
+    echo '</label><p class="hint">허용 부모: ' . tw_h(tw_env('TRADE_ALLOWED_PARENT', '/volume1/web')) . ' 이하만 가능합니다. 기본값은 /volume1/web/trade 입니다.</p>';
+    echo '<label>GitHub ref';
+    echo '<input type="text" name="github_ref" value="' . tw_h($ref) . '" required>';
+    echo '</label><p class="hint">ref는 설치 전에 commit SHA로 고정됩니다. 저장소는 서버 설정의 TRADE_GITHUB_REPOSITORY 값을 사용합니다.</p>';
+    echo '<label>설치 키';
+    echo '<input type="password" name="installer_key" autocomplete="new-password" required>';
+    echo '</label><p class="hint">TRADE_WEB_INSTALL_SECRET 또는 웹 루트 밖의 TRADE_WEB_INSTALL_SECRET_FILE과 일치해야 합니다.</p>';
+    echo '<label>대상 경로 확인';
+    echo '<input type="text" name="confirm_target" value="' . tw_h($confirm) . '" placeholder="' . tw_h($root) . '" required>';
+    echo '</label><p class="hint">실수 방지를 위해 위 저장 폴더의 전체 경로를 다시 입력하십시오.</p>';
+    echo '<label><input type="checkbox" name="allow_reinstall" value="1"' . ($allowReinstall ? ' checked' : '') . '> 기존에 설치된 관리 대상이면 업그레이드 허용</label>';
+    echo '<button type="submit">소스 다운로드 및 저장</button>';
+    echo '</form>';
+    echo '<p class="hint">초기화는 SINGLE_FILE_PAPER / REAL=false이며 scheduler는 자동 시작하지 않습니다. 설치 후 이 installer 파일을 이동하거나 삭제하고 Web Station 접근제어를 유지하십시오.</p>';
+    echo '</main></body></html>';
+}
+
+function tw_web_main(): void
+{
+    if (PHP_SAPI === 'cli') {
+        http_response_code(405);
+        echo 'WEB_ONLY' . PHP_EOL;
+        return;
+    }
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    $form = array(
+        'web_root' => tw_env('TRADE_WEB_ROOT', TW_DEFAULT_WEB_ROOT),
+        'github_ref' => tw_env('TRADE_GITHUB_REF', TW_DEFAULT_BRANCH),
+        'confirm_target' => '',
+        'allow_reinstall' => false,
+    );
+    $message = '';
+    $error = '';
+    try {
+        tw_web_start_session();
+        if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'POST') {
+            if (!hash_equals(tw_web_csrf(), tw_post_value('csrf'))) {
+                tw_fail('WEB_CSRF_INVALID');
+            }
+            tw_web_authenticate();
+            $target = tw_web_root(tw_post_value('web_root'));
+            $form['web_root'] = $target;
+            $form['github_ref'] = tw_web_ref(tw_post_value('github_ref'));
+            $form['confirm_target'] = tw_post_value('confirm_target');
+            $form['allow_reinstall'] = tw_post_value('allow_reinstall') === '1';
+            if (!hash_equals($target, trim($form['confirm_target']))) {
+                tw_fail('TARGET_CONFIRMATION_MISMATCH');
+            }
+            ob_start();
+            try {
+                tw_install($target, $form['allow_reinstall'], $form['github_ref']);
+                $message = trim((string)ob_get_contents());
+                ob_end_clean();
+            } catch (Throwable $installError) {
+                ob_end_clean();
+                throw $installError;
+            }
+        }
+    } catch (Throwable $errorObject) {
+        $error = $errorObject->getMessage();
+    }
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        http_response_code(500);
+        echo 'WEB_INSTALLER_SESSION_ERROR';
+        return;
+    }
+    tw_web_render($form, $message, $error);
+}
+
+tw_web_main();
