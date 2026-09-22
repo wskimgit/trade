@@ -1,0 +1,47 @@
+# Secrets / local config
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+broker_config.local.php
+*secret*
+*token*
+
+# Runtime state
+*_runtime/
+runtime_state/
+trade_single_compat/
+*.log
+*.pid
+*.lock
+*.wal
+*.spool
+*.ack
+*.queue
+
+# Real order/position/state exports
+orders*.json
+positions*.json
+broker_state*.json
+runner_state*.json
+engine_state*.json
+market_regime*.json
+capital*.json
+
+# Temporary / backups
+*.tmp
+*.bak
+*.backup
+*~
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Test output
+coverage/
+test-output/
