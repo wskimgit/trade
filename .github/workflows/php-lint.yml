@@ -1,0 +1,38 @@
+name: PHP Lint
+
+on:
+  push:
+    branches: [ main, "codex/**" ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  php74-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "7.4"
+          coverage: none
+
+      - name: PHP version
+        run: php -v
+
+      - name: Lint source
+        shell: bash
+        run: |
+          set -euo pipefail
+          found=0
+          for f in src/*.php; do
+            [ -f "$f" ] || continue
+            found=1
+            php -l "$f"
+          done
+          [ "$found" -eq 1 ]
