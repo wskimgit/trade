@@ -1,4 +1,4 @@
-name: Trade Web Installer Lint
+name: Trade Pull Verify Lint
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  trade-web-php74:
+  trade-pull-verify-php74:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -22,10 +22,6 @@ jobs:
           php-version: "7.4"
           coverage: none
 
-      - name: Lint installer and entry point
+      - name: Lint pull verifier
         shell: bash
-        run: |
-          set -euo pipefail
-          for f in deploy/trade_web/*.php; do
-            php -l "$f"
-          done
+        run: php -l deploy/nas/pull_verify_trade.php
