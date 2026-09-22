@@ -3,8 +3,9 @@
  * Trade NAS Pull & VERIFY deployer v1.0.0
  *
  * Save this one file on the NAS outside the web root and execute it locally
- * with the NAS PHP CLI or Task Scheduler. It has no web installation route
- * and does not use SSH. It pulls only from GitHub over verified HTTPS.
+ * with the NAS PHP 7.4 runtime. It supports a locked-down mobile web control
+ * screen and a local CLI fallback; it never uses SSH and pulls only from
+ * GitHub over verified HTTPS.
  */
 declare(strict_types=1);
 
@@ -12,12 +13,14 @@ date_default_timezone_set('Asia/Seoul');
 @ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
-const PV_VERSION = '1.0.0';
+const PV_VERSION = '1.1.0';
 const PV_MANAGED_BY = 'codex/trade-pull-verify';
 const PV_DEFAULT_REPOSITORY = 'wskimgit/trade';
 const PV_DEFAULT_REF = 'main';
 const PV_DEFAULT_TARGET = '/volume1/web/trade';
 const PV_DEFAULT_ALLOWED_PARENT = '/volume1/web';
+const PV_DEFAULT_WEB_KEY_FILE = '/volume1/.trade_pull_web_key';
+const PV_DEFAULT_WEB_LOCK_FILE = '/volume1/.trade_pull_verify_web.lock';
 const PV_MAX_SOURCE_BYTES = 1572864;
 
 const PV_SOURCE_FILES = array(
@@ -714,9 +717,405 @@ function pv_selftest(): int
         'default_target' => PV_DEFAULT_TARGET,
         'source_count' => count(PV_SOURCE_FILES),
         'real_order_allowed' => false,
-        'web_route' => false,
+        'web_route' => true,
         'ssh' => false,
     ), true) . PHP_EOL;
+    return 0;
+}
+
+
+function pv_web_is_https(): bool
+{
+    $https = strtolower((string)($_SERVER['HTTPS'] ?? ''));
+    if ($https !== '' && $https !== 'off' && $https !== '0') {
+        return true;
+    }
+    return (string)($_SERVER['SERVER_PORT'] ?? '') === '443';
+}
+
+function pv_web_key_file(): string
+{
+    $file = pv_normalize_path(
+        pv_env('TRADE_PULL_WEB_KEY_FILE', PV_DEFAULT_WEB_KEY_FILE)
+    );
+    $parent = pv_allowed_parent();
+    $prefix = rtrim($parent, '/') . '/';
+    if ($file === $parent || strpos($file, $prefix) === 0) {
+        pv_fail('WEB_KEY_IN_WEB_SCOPE');
+    }
+    return $file;
+}
+
+function pv_web_key(): string
+{
+    $inline = pv_env('TRADE_PULL_WEB_KEY');
+    $file = pv_web_key_file();
+    if ($inline !== '' && is_file($file)) {
+        pv_fail('WEB_KEY_SOURCE_AMBIGUOUS');
+    }
+    if ($inline !== '') {
+        $key = $inline;
+    } elseif (!is_file($file)) {
+        return '';
+    } else {
+        if (!is_readable($file)) {
+            pv_fail('WEB_KEY_FILE_NOT_READABLE');
+        }
+        $key = trim((string)@file_get_contents($file));
+    }
+    if (strlen($key) < 16) {
+        pv_fail('WEB_KEY_TOO_SHORT');
+    }
+    return $key;
+}
+
+function pv_web_lock_file(): string
+{
+    $file = pv_normalize_path(
+        pv_env('TRADE_PULL_LOCK_FILE', PV_DEFAULT_WEB_LOCK_FILE)
+    );
+    $parent = pv_allowed_parent();
+    $prefix = rtrim($parent, '/') . '/';
+    if ($file === $parent || strpos($file, $prefix) === 0) {
+        pv_fail('WEB_LOCK_IN_WEB_SCOPE');
+    }
+    return $file;
+}
+
+function pv_web_session_start(): void
+{
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        return;
+    }
+    @session_name('trade_pull_verify');
+    @session_set_cookie_params(array(
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => pv_web_is_https(),
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ));
+    if (!@session_start()) {
+        pv_fail('WEB_SESSION_FAILED');
+    }
+}
+
+function pv_web_csrf(): string
+{
+    if (!isset($_SESSION['pv_web_csrf'])
+        || !preg_match('/^[a-f0-9]{48}$/', (string)$_SESSION['pv_web_csrf'])) {
+        try {
+            $_SESSION['pv_web_csrf'] = bin2hex(random_bytes(24));
+        } catch (Throwable $error) {
+            pv_fail('WEB_RANDOM_FAILED');
+        }
+    }
+    return (string)$_SESSION['pv_web_csrf'];
+}
+
+function pv_web_validate_csrf(): void
+{
+    $expected = pv_web_csrf();
+    $provided = (string)($_POST['csrf'] ?? '');
+    if ($provided === '' || !hash_equals($expected, $provided)) {
+        pv_fail('WEB_CSRF_INVALID');
+    }
+}
+
+function pv_web_authenticated(): bool
+{
+    return !empty($_SESSION['pv_web_authenticated']);
+}
+
+function pv_web_h($value): string
+{
+    return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+}
+
+function pv_web_status(): array
+{
+    $status = array(
+        'target_root' => PV_DEFAULT_TARGET,
+        'target_exists' => false,
+        'target_entries' => 0,
+        'source_commit' => '',
+        'verified_at' => '',
+        'authority' => '',
+        'real_order_allowed' => false,
+        'source_count' => count(PV_SOURCE_FILES),
+        'status_error' => '',
+    );
+    try {
+        $root = pv_target_root();
+        $status['target_root'] = $root;
+        $status['target_exists'] = is_dir($root);
+        if (is_dir($root)) {
+            $status['target_entries'] = count(pv_entries($root));
+        }
+        $state = pv_read_json($root . '/trade_pull_verify_state.json');
+        if (is_array($state)) {
+            $status['source_commit'] = (string)($state['source_commit'] ?? '');
+            $status['verified_at'] = (string)($state['verified_at'] ?? '');
+        }
+        $marker = pv_read_json($root . '/trade_phase3b_lite_v100/authority.json');
+        if (is_array($marker)) {
+            $status['authority'] = (string)($marker['authority'] ?? '');
+            $status['real_order_allowed'] = !empty($marker['real_order_allowed']);
+        }
+    } catch (Throwable $error) {
+        $status['status_error'] = $error->getMessage();
+    }
+    return $status;
+}
+
+function pv_web_lock()
+{
+    $handle = @fopen(pv_web_lock_file(), 'c');
+    if ($handle === false) {
+        pv_fail('WEB_LOCK_OPEN_FAILED');
+    }
+    if (!@flock($handle, LOCK_EX | LOCK_NB)) {
+        @fclose($handle);
+        pv_fail('WEB_ACTION_IN_PROGRESS');
+    }
+    return $handle;
+}
+
+function pv_web_unlock($handle): void
+{
+    if (is_resource($handle)) {
+        @flock($handle, LOCK_UN);
+        @fclose($handle);
+    }
+}
+
+function pv_web_run_action(string $action): array
+{
+    $action = strtolower($action);
+    ob_start();
+    $started = microtime(true);
+    try {
+        if ($action === 'pull') {
+            $exitCode = pv_pull(false);
+        } elseif ($action === 'upgrade') {
+            $exitCode = pv_pull(true);
+        } elseif ($action === 'verify') {
+            $exitCode = pv_verify_local();
+        } elseif ($action === 'selftest') {
+            $exitCode = pv_selftest();
+        } else {
+            pv_fail('WEB_ACTION_INVALID');
+        }
+        $output = (string)ob_get_clean();
+        return array(
+            'ok' => $exitCode === 0,
+            'exit_code' => $exitCode,
+            'stdout' => trim($output),
+            'elapsed_seconds' => round(microtime(true) - $started, 2),
+        );
+    } catch (Throwable $error) {
+        $output = (string)ob_get_clean();
+        return array(
+            'ok' => false,
+            'exit_code' => 1,
+            'stdout' => trim($output),
+            'error' => $error->getMessage(),
+            'elapsed_seconds' => round(microtime(true) - $started, 2),
+        );
+    }
+}
+
+function pv_web_render(string $message = '', ?array $result = null): void
+{
+    $keyReady = false;
+    $keyPath = PV_DEFAULT_WEB_KEY_FILE;
+    $keyError = '';
+    try {
+        $keyPath = pv_web_key_file();
+        $keyReady = pv_web_key() !== '';
+    } catch (Throwable $error) {
+        $keyError = $error->getMessage();
+    }
+    $status = pv_web_status();
+    $loggedIn = pv_web_authenticated();
+    $csrf = pv_web_csrf();
+    $https = pv_web_is_https();
+
+    echo '<!doctype html><html lang="ko"><head><meta charset="utf-8">';
+    echo '<meta name="viewport" content="width=device-width,initial-scale=1">';
+    echo '<title>Trade Pull &amp; VERIFY</title>';
+    echo '<style>'
+        . 'body{margin:0;background:#f4f6f8;color:#17212b;font-family:system-ui,-apple-system,'
+        . 'BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:16px}'
+        . 'main{max-width:720px;margin:0 auto;padding:18px 14px 40px}'
+        . 'h1{font-size:23px;margin:4px 0 8px}'
+        . 'h2{font-size:18px;margin:0 0 10px}'
+        . '.card{background:#fff;border:1px solid #d9e0e7;border-radius:12px;'
+        . 'padding:16px;margin:12px 0;box-shadow:0 1px 2px rgba(0,0,0,.04)}'
+        . '.muted{color:#5d6a75;font-size:14px}'
+        . '.ok{color:#0b6b3a}.warn{color:#9a4b00}.err{color:#a51d2d}'
+        . 'label{display:block;font-weight:600;margin:12px 0 6px}'
+        . 'input[type=password]{width:100%;box-sizing:border-box;padding:12px;border:1px solid #aeb8c2;'
+        . 'border-radius:8px;font-size:16px}'
+        . 'button{border:0;border-radius:8px;padding:12px 14px;margin:5px 4px 5px 0;'
+        . 'font-size:16px;font-weight:700;background:#1769aa;color:#fff}'
+        . 'button.secondary{background:#5f6b76}.danger{background:#9a2535!important}'
+        . '.row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #edf0f2;'
+        . 'padding:7px 0}.row:last-child{border-bottom:0}.value{text-align:right;word-break:break-word}'
+        . 'pre{white-space:pre-wrap;word-break:break-word;background:#101820;color:#d9f1df;'
+        . 'padding:12px;border-radius:8px;overflow:auto;font-size:13px}'
+        . 'code{word-break:break-all}.notice{padding:10px;border-radius:8px;background:#fff4d6;margin:10px 0}'
+        . '</style></head><body><main>';
+    echo '<h1>Trade Pull &amp; VERIFY</h1>';
+    echo '<p class="muted">브라우저 전용 · 독립 경로 <code>'
+        . pv_web_h(PV_DEFAULT_TARGET) . '</code> · PAPER 전용</p>';
+
+    if (!$https && !pv_bool('TRADE_PULL_ALLOW_HTTP', false)) {
+        echo '<div class="notice warn">HTTPS 주소로 접속해야 웹 키와 작업 요청이 허용됩니다.</div>';
+    }
+    if ($message !== '') {
+        echo '<div class="card err"><strong>메시지</strong><pre>'
+            . pv_web_h($message) . '</pre></div>';
+    }
+    if ($result !== null) {
+        $resultText = trim((string)($result['stdout'] ?? ''));
+        if (!$result['ok']) {
+            $errorText = (string)($result['error'] ?? 'WEB_ACTION_FAILED');
+            $resultText = trim($resultText . ($resultText !== '' ? PHP_EOL : '') . $errorText);
+        }
+        if ($resultText === '') {
+            $resultText = '(출력 없음)';
+        }
+        echo '<div class="card ' . ($result['ok'] ? 'ok' : 'err') . '"><h2>'
+            . ($result['ok'] ? '완료' : '실패') . '</h2><pre>'
+            . pv_web_h($resultText) . '</pre>';
+        echo '<p class="muted">소요 시간: ' . pv_web_h($result['elapsed_seconds'] ?? '') . '초</p></div>';
+    }
+
+    echo '<section class="card"><h2>현재 상태</h2>';
+    echo '<div class="row"><span>대상</span><span class="value"><code>'
+        . pv_web_h($status['target_root']) . '</code></span></div>';
+    echo '<div class="row"><span>대상 폴더</span><span class="value">'
+        . ($status['target_exists'] ? '존재' : '없음') . '</span></div>';
+    echo '<div class="row"><span>대상 항목 수</span><span class="value">'
+        . pv_web_h($status['target_entries']) . '</span></div>';
+    echo '<div class="row"><span>소스 파일 수</span><span class="value">'
+        . pv_web_h($status['source_count']) . '</span></div>';
+    echo '<div class="row"><span>마지막 커밋</span><span class="value"><code>'
+        . pv_web_h($status['source_commit'] !== '' ? $status['source_commit'] : '미설치') . '</code></span></div>';
+    echo '<div class="row"><span>권한</span><span class="value">'
+        . pv_web_h($status['authority'] !== '' ? $status['authority'] : '미확인') . '</span></div>';
+    echo '<div class="row"><span>실주문 허용</span><span class="value">'
+        . ($status['real_order_allowed'] ? '<span class="err">true</span>' : '<span class="ok">false</span>')
+        . '</span></div>';
+    if ($status['verified_at'] !== '') {
+        echo '<div class="row"><span>검증 시각</span><span class="value">'
+            . pv_web_h($status['verified_at']) . '</span></div>';
+    }
+    if ($status['status_error'] !== '') {
+        echo '<p class="err">상태 조회: ' . pv_web_h($status['status_error']) . '</p>';
+    }
+    echo '</section>';
+
+    if (!$loggedIn) {
+        echo '<section class="card"><h2>관리자 로그인</h2>';
+        if (!$keyReady) {
+            echo '<p class="warn">웹 키가 아직 설정되지 않았습니다.</p>';
+            echo '<p>DSM File Station에서 웹 루트 바깥에 다음 파일을 만들고, 16자 이상의 비밀 문자열 한 줄만 저장하십시오.</p>';
+            echo '<p><code>' . pv_web_h($keyPath) . '</code></p>';
+            if ($keyError !== '') {
+                echo '<pre>' . pv_web_h($keyError) . '</pre>';
+            }
+        } else {
+            echo '<form method="post"><input type="hidden" name="action" value="login">';
+            echo '<input type="hidden" name="csrf" value="' . pv_web_h($csrf) . '">';
+            echo '<label for="web_key">웹 키</label>';
+            echo '<input id="web_key" name="web_key" type="password" autocomplete="current-password" required>';
+            echo '<button type="submit">로그인</button></form>';
+        }
+        echo '</section>';
+    } else {
+        echo '<section class="card"><h2>작업</h2>';
+        echo '<form method="post">';
+        echo '<input type="hidden" name="csrf" value="' . pv_web_h($csrf) . '">';
+        echo '<button type="submit" name="action" value="verify">로컬 VERIFY</button>';
+        echo '<button type="submit" name="action" value="pull">최초 PULL</button>';
+        echo '<p><label><input type="checkbox" name="confirm_upgrade" value="1"> '
+            . '기존 trade 상태를 보존한 채 GitHub 최신 검증본으로 교체하는 데 동의</label>';
+        echo '<button class="danger" type="submit" name="action" value="upgrade">UPGRADE</button>';
+        echo '</form>';
+        echo '<p class="muted">PULL은 비어 있는 대상에서만 동작합니다. 이미 설치된 대상은 UPGRADE를 사용하십시오. '
+            . '모든 작업은 GitHub 커밋 확인, allowlist, SHA-256, PHP 구문검사 후 원자적으로 활성화됩니다.</p>';
+        echo '<form method="post"><input type="hidden" name="csrf" value="' . pv_web_h($csrf) . '">';
+        echo '<button class="secondary" type="submit" name="action" value="logout">로그아웃</button></form>';
+        echo '</section>';
+    }
+
+    echo '<p class="muted">버전 ' . pv_web_h(PV_VERSION)
+        . ' · SINGLE_FILE_PAPER · real_order_allowed=false</p>';
+    echo '</main></body></html>';
+}
+
+function pv_web_main(): int
+{
+    @set_time_limit(0);
+    @ignore_user_abort(true);
+    try {
+        pv_web_session_start();
+    } catch (Throwable $error) {
+        echo '<pre>PULL_VERIFY_WEB_SESSION_FAILED '
+            . pv_web_h($error->getMessage()) . '</pre>';
+        return 1;
+    }
+
+    $message = '';
+    $result = null;
+    if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'POST') {
+        $action = strtolower(trim((string)($_POST['action'] ?? '')));
+        try {
+            pv_web_validate_csrf();
+            if ($action === 'login') {
+                if (!pv_web_is_https() && !pv_bool('TRADE_PULL_ALLOW_HTTP', false)) {
+                    pv_fail('HTTPS_REQUIRED');
+                }
+                $key = pv_web_key();
+                $provided = trim((string)($_POST['web_key'] ?? ''));
+                if ($key === '' || $provided === '' || !hash_equals($key, $provided)) {
+                    usleep(250000);
+                    pv_fail('WEB_LOGIN_FAILED');
+                }
+                @session_regenerate_id(true);
+                $_SESSION['pv_web_authenticated'] = true;
+                $message = '로그인되었습니다.';
+            } elseif ($action === 'logout') {
+                unset($_SESSION['pv_web_authenticated']);
+                @session_regenerate_id(true);
+                $message = '로그아웃되었습니다.';
+            } elseif (!pv_web_authenticated()) {
+                pv_fail('WEB_LOGIN_REQUIRED');
+            } else {
+                if (!pv_web_is_https() && !pv_bool('TRADE_PULL_ALLOW_HTTP', false)) {
+                    pv_fail('HTTPS_REQUIRED');
+                }
+                if ($action === 'upgrade'
+                    && (string)($_POST['confirm_upgrade'] ?? '') !== '1') {
+                    pv_fail('UPGRADE_CONFIRM_REQUIRED');
+                }
+                if (!in_array($action, array('pull', 'upgrade', 'verify', 'selftest'), true)) {
+                    pv_fail('WEB_ACTION_INVALID');
+                }
+                $lock = pv_web_lock();
+                try {
+                    $result = pv_web_run_action($action);
+                } finally {
+                    pv_web_unlock($lock);
+                }
+            }
+        } catch (Throwable $error) {
+            $message = $error->getMessage();
+        }
+    }
+    pv_web_render($message, $result);
     return 0;
 }
 
@@ -757,4 +1156,7 @@ function pv_main(array $argv): int
     }
 }
 
+if (PHP_SAPI !== 'cli') {
+    exit(pv_web_main());
+}
 exit(pv_main($argv ?? array()));
