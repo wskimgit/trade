@@ -1,0 +1,34 @@
+name: Trade Web Installer Lint
+
+on:
+  push:
+    branches: [ main, "codex/**" ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  trade-web-php74:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "7.4"
+          coverage: none
+
+      - name: Lint installer and entry point
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in deploy/trade_web/*.php; do
+            php -l "$f"
+          done
+
+      - name: Run installer self-test
+        run: php deploy/trade_web/install_trade_web.php --selftest
