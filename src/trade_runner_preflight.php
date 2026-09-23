@@ -2,7 +2,7 @@
 /**
  * trade_runner_preflight.php
  * Low-Load Runner WEB Preflight v1.4.6
- * Current-contract verifier for Runner v1.4.6 / Engine v4.4.6 / Broker v5.9.8.
+ * Current-contract verifier for Runner v1.4.6 / Engine v4.4.6 / Broker v5.9.10.
  * PHP 7.4 compatible.
  *
  * This replaces the retired v1.4.2 exact-hash preflight. It does not mutate
@@ -14,7 +14,7 @@ date_default_timezone_set('Asia/Seoul');
 error_reporting(E_ALL);
 
 const PF_VERSION='v1.4.6';
-const PF_REV='trade-low-load-runner-web-preflight-v146-order-path-recovery-20260923-r2';
+const PF_REV='trade-low-load-runner-web-preflight-v146-order-path-recovery-20260923-r3';
 
 function pf_add(array &$checks,string $name,bool $ok,$detail='',string $severity='hard'): void {
     $checks[]=['name'=>$name,'ok'=>$ok,'severity'=>$severity,'detail'=>$detail];
@@ -59,7 +59,7 @@ pf_add($checks,'PHP >= 7.4',PHP_VERSION_ID>=70400,PHP_VERSION);
 
 $exact=[
  'trade_engine.php'=>'d8f51e0f958b02f10077b707ee1f86451b5716858317ddfbf695c29ddd4a0289',
- 'trade_broker.php'=>'50911aae3d120eb0e61c2b814e0838c10d059374fcff4c36dde8d3a9fba03f06',
+ 'trade_broker.php'=>'54dfbe5afc0ad060cc6eebf9efcb1aa9a68ef9fe9f21939fab178167c85f0e9f',
  'dts.php'=>'fe226ac726485cec5df0fd324d6ae306e1e3fdfcb344ed604282079d0d574a99',
  'abc.php'=>'be44d87292a836c393b1c2b76b2c9a0381cca93996326220028c93bfa8d8ead5',
  'das.php'=>'7f314fdda15581516899223f5dbf1472aab6c08104ca9e8e0e2c5687fc066fda',
@@ -76,7 +76,7 @@ $exact=[
 foreach($exact as$f=>$want){$have=pf_sha($base.'/'.$f);pf_add($checks,'Exact '.$f,$have===$want,['expected'=>$want,'actual'=>$have,'file'=>$base.'/'.$f]);}
 
 pf_add($checks,'Engine v4.4.6 identity',pf_source_has($base.'/trade_engine.php','trade-engine-v446-sell-exchange-provenance-20260923-r1'),'SELL exchange provenance recovery');
-pf_add($checks,'Broker v5.9.9 identity',pf_source_has($base.'/trade_broker.php','trade-broker-v599-numeric-exchange-key-preserve-20260923-r1')&&pf_source_has($base.'/trade_broker.php','ORDER_EXCHANGE_NUMERIC_SYMBOL_KEY_PRESERVE'),'numeric JP symbol exchange-map key preservation');
+pf_add($checks,'Broker v5.9.10 identity',pf_source_has($base.'/trade_broker.php','trade-broker-v5910-jpx-builtin-calendar-parity-20260923-r1')&&pf_source_has($base.'/trade_broker.php','ORDER_EXCHANGE_NUMERIC_SYMBOL_KEY_PRESERVE')&&pf_source_has($base.'/trade_broker.php','BROKER_JPX_BUILTIN_CALENDAR_PARITY'),'numeric JP symbol exchange-map preservation + JPX built-in calendar parity');
 pf_add($checks,'Runner v1.4.6 identity',pf_source_has($base.'/trade_runner.php','trade-low-load-runner-v146-approval-actionable-gate-20260923-r1'),'approval/actionable gate');
 pf_add($checks,'Runner Control v1.4.6 identity',pf_source_has($base.'/trade_runner_control.php','trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1'),'control version gate');
 pf_add($checks,'3+1 Preflight v1.3.16 identity',pf_source_has($base.'/trade_3plus1_preflight.php','trade-3plus1-preflight-v1316-order-path-recovery-contract-20260923-r1'),'order-path recovery contract');
