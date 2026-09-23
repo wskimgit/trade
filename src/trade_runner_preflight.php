@@ -14,7 +14,7 @@ date_default_timezone_set('Asia/Seoul');
 error_reporting(E_ALL);
 
 const PF_VERSION='v1.4.6';
-const PF_REV='trade-low-load-runner-web-preflight-v146-order-path-recovery-20260923-r1';
+const PF_REV='trade-low-load-runner-web-preflight-v146-order-path-recovery-20260923-r2';
 
 function pf_add(array &$checks,string $name,bool $ok,$detail='',string $severity='hard'): void {
     $checks[]=['name'=>$name,'ok'=>$ok,'severity'=>$severity,'detail'=>$detail];
@@ -88,7 +88,10 @@ pf_add($checks,'REAL false',empty($auth['real_order_allowed']),$auth['real_order
 $canonicalFile=$base.'/trade_runtime_single/trade_state.json';
 $canonical=pf_json($canonicalFile);
 pf_add($checks,'Canonical state readable',($canonical['schema']??'')==='trade_state_v1',['revision'=>$canonical['revision']??null,'bytes'=>is_file($canonicalFile)?filesize($canonicalFile):0]);
-pf_add($checks,'Canonical mode PAPER',strtolower((string)($canonical['mode']??''))==='paper',$canonical['mode']??'');
+$canonicalMode=strtoupper(trim((string)($canonical['mode']??$canonical['execution_mode']??'')));
+$authorityPaper=strtoupper((string)($auth['authority']??''))==='SINGLE_FILE_PAPER'&&empty($auth['real_order_allowed']);
+$canonicalPaperOk=$canonicalMode===''?$authorityPaper:($canonicalMode==='PAPER');
+pf_add($checks,'Canonical PAPER authority contract',$canonicalPaperOk,['canonical_mode'=>$canonicalMode!==''?$canonicalMode:'NOT_STORED','basis'=>$canonicalMode!==''?'CANONICAL_FIELD':'SINGLE_FILE_PAPER_AUTHORITY','real_order_allowed'=>$auth['real_order_allowed']??null]);
 pf_add($checks,'Canonical state < 2 MiB soft limit',is_file($canonicalFile)&&filesize($canonicalFile)<2097152,is_file($canonicalFile)?filesize($canonicalFile):0,'warning');
 
 $php=pf_php_bin();
@@ -171,6 +174,47 @@ if($runnerLoaded){
 
     $eg=tr_execution_order_gate(true);
     pf_add($checks,'Execution order gate readable',!empty($eg['ok']),$eg);
+    $rsNow=tr_state_load($cfg);
+    $brokerJob=is_array($rsNow['jobs']['broker']??null)?$rsNow['jobs']['broker']:[];
+    $nowEpoch=time();$nextBrokerDue=(int)($brokerJob['next_due_at']??0);$watchdog=max(60,(int)($cfg['broker_actionable_watchdog_sec']??300));
+    $bounded=((int)($eg['actionable_order_count']??0)<=0)||($nextBrokerDue>0&&$nextBrokerDue<=($nowEpoch+$watchdog));
+    pf_add($checks,'Actionable Broker schedule bounded',$bounded,[
+        'actionable_order_count'=>(int)($eg['actionable_order_count']??0),
+        'next_due_at'=>$nextBrokerDue>0?date('Y-m-d H:i:s',$nextBrokerDue):'',
+        'wait_sec'=>$nextBrokerDue>0?max(0,$nextBrokerDue-$nowEpoch):null,
+        'watchdog_sec'=>$watchdog,
+        'last_full_run_epoch'=>(int)($brokerJob['last_full_run_epoch']??0),
+        'last_end_at'=>$brokerJob['last_end_at']??'',
+        'last_reason'=>$brokerJob['last_reason']??''
+    ]);
+
+    $exchangeMap=[];
+    $tradeListFile=$base.'/trade_list.php';
+    if(is_file($tradeListFile)){
+        $list=@include $tradeListFile;
+        if(is_array($list)){
+            foreach(['us','jp'] as $mk){
+                foreach((array)($list[$mk]??[]) as $row){
+                    if(!is_array($row)||(array_key_exists('enabled',$row)&&$row['enabled']!==true))continue;
+                    $sym=strtoupper(trim((string)($row['symbol']??$row['code']??'')));
+                    $ex=strtoupper(trim((string)($row['exchange']??$row['exchange_code']??'')));
+                    if($sym!==''&&$ex!=='')$exchangeMap[$sym]=$ex;
+                }
+            }
+        }
+    }
+    $coverage=[];$coverageOk=true;
+    foreach((array)($orders['data']['orders']??[]) as $oid=>$o){
+        if(!is_array($o))continue;
+        $st=strtoupper((string)($o['status']??''));if(in_array($st,['FILLED','PAPER_FILLED','REJECTED','CANCELLED','PARTIAL_CANCELLED','EXPIRED'],true))continue;
+        $market=strtoupper((string)($o['market']??''));if(!in_array($market,['US','JP'],true))continue;
+        $sym=strtoupper(trim((string)($o['symbol']??'')));$own=strtoupper(trim((string)($o['exchange_code']??$o['exchange']??'')));
+        if($own!=='')continue;
+        $mapped=(string)($exchangeMap[$sym]??'');$ok=$mapped!=='';
+        if(!$ok)$coverageOk=false;
+        $coverage[]=['order_id'=>(string)($o['order_id']??$oid),'market'=>$market,'symbol'=>$sym,'mapped_exchange'=>$mapped,'approval_block_reason'=>$o['approval_block_reason']??''];
+    }
+    pf_add($checks,'Active US/JP exchange fallback coverage',$coverageOk,$coverage);
     $tg=tr_transport_gate(true);
     pf_add($checks,'Transport gate integrity/parse',!empty($tg['ok']),$tg);
 
