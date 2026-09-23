@@ -13,7 +13,8 @@ $expected = [
     'dts.php' => 'dts-v254-market-timezone-hard-stale-recovery-contract-20260912-r1',
     'abc.php' => 'abc-v542-market-timezone-bar-date-20260912-r1',
     'das.php' => 'das-v303-market-timezone-data-timestamp-20260912-r1',
-    'stc26.php' => 'stc26-v301-daily-opportunity-shadow-20260910-r1',\n    'trade_export.php' => 'trade-export-v100-dedicated-mobile-safe-download-20260923-r1',
+    'stc26.php' => 'stc26-v301-daily-opportunity-shadow-20260910-r1',
+    'trade_export.php' => 'trade-export-v100-dedicated-mobile-safe-download-20260923-r1',
 ];
 
 $errors = [];
