@@ -10,7 +10,7 @@ Current ChatGPT → Codex handoff inventory.
 | src/trade_broker.php | v5.9.10 / trade-broker-v5910-jpx-builtin-calendar-parity-20260923-r1 | IMPORTED |
 | src/trade_runner.php | v1.4.6 / trade-low-load-runner-v146-approval-actionable-gate-20260923-r1 | IMPORTED |
 | src/trade_runner_control.php | v1.4.6 / trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1 | IMPORTED |
-| src/trade_runner_preflight.php | v1.4.6 / trade-low-load-runner-web-preflight-v146-order-path-recovery-20260923-r2 | IMPORTED |
+| src/trade_runner_preflight.php | v1.4.6 / trade-low-load-runner-web-preflight-v146-order-path-recovery-20260923-r3 | IMPORTED |
 | src/trade_dashboard.php | v3.4.9 / trade-dashboard-v349-dedicated-export-route-20260923-r1 | IMPORTED |
 | src/trade_3plus1_preflight.php | v1.3.16 / trade-3plus1-preflight-v1316-order-path-recovery-contract-20260923-r1 | IMPORTED |
 | src/trade_export.php | v1.0.1 / trade-export-v101-full-engine-config-mobile-safe-download-20260923-r1 | IMPORTED |
