@@ -1,7 +1,7 @@
 <?php
 /**
  * trade_broker.php
- * Trade Broker v5.9.9 — 3+1 v1.4 · numeric exchange-map key preservation · SINGLE_FILE_PAPER runtime authority · auto-approval telemetry
+ * Trade Broker v5.9.10 — 3+1 v1.4 · JPX calendar parity · numeric exchange-map key preservation · SINGLE_FILE_PAPER runtime authority
  * PHP 7.4 compatible
  *
  * 역할
@@ -23,8 +23,8 @@ error_reporting(E_ALL);
 @ini_set('memory_limit','128M');
 @set_time_limit(0);
 
-const TB_VERSION='v5.9.9 3PLUS1-v1.4 · NUMERIC-EXCHANGE-KEY-PRESERVE · EXCHANGE-MAP-RECOVERY · RUNTIME-AUTHORITY-UNIFIED · AUTO-APPROVAL-TELEMETRY · STUCK-SELL-RECOVERY';
-const TB_REV='trade-broker-v599-numeric-exchange-key-preserve-20260923-r1';
+const TB_VERSION='v5.9.10 3PLUS1-v1.4 · JPX-BUILTIN-CALENDAR · NUMERIC-EXCHANGE-KEY-PRESERVE · EXCHANGE-MAP-RECOVERY · RUNTIME-AUTHORITY-UNIFIED · AUTO-APPROVAL-TELEMETRY · STUCK-SELL-RECOVERY';
+const TB_REV='trade-broker-v5910-jpx-builtin-calendar-parity-20260923-r1';
 const TB_SCHEMA='te_v25';
 const TB_HTTP_CONNECT_TIMEOUT=5;
 const TB_HTTP_TIMEOUT=15;
@@ -1330,9 +1330,35 @@ function tb_trade_list_exchange_counts(string $file): array
 {
     $counts=['US'=>0,'JP'=>0,'MISSING'=>0];if(!is_file($file))return$counts;$data=include $file;if(!is_array($data))return$counts;foreach(['us'=>'US','jp'=>'JP']as$key=>$market){foreach($data[$key]??[]as$row){if(!is_array($row)||(array_key_exists('enabled',$row)&&$row['enabled']!==true))continue;$e=tb_norm_exchange((string)($row['exchange']??$row['exchange_code']??$row['market']??''));if($e==='')$counts['MISSING']++;else$counts[$market]++;}}return$counts;
 }
+// BROKER_JPX_BUILTIN_CALENDAR_PARITY
+// Execution-side market hours must agree with Runner wake hints.  In particular,
+// JPX holidays cannot depend on an optional local file being present.
+function tb_market_date_set(array $rows): array
+{
+    $set=[];foreach($rows as$k=>$v){$d=is_string($k)&&preg_match('/^\\d{4}-\\d{2}-\\d{2}$/',$k)?$k:(string)$v;if(preg_match('/^\\d{4}-\\d{2}-\\d{2}$/',$d))$set[$d]=true;}return$set;
+}
+function tb_market_builtin_calendar_data(string $market): array
+{
+    $m=strtoupper($market);
+    if($m==='JP')return['holidays'=>[
+        '2026-01-01','2026-01-02','2026-01-03','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06','2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23','2026-10-12','2026-11-03','2026-11-23','2026-12-31',
+        '2027-01-01','2027-01-02','2027-01-03','2027-01-11','2027-02-11','2027-02-23','2027-03-21','2027-03-22','2027-04-29','2027-05-03','2027-05-04','2027-05-05','2027-07-19','2027-08-11','2027-09-20','2027-09-23','2027-10-11','2027-11-03','2027-11-23','2027-12-31'
+    ],'early_closes'=>[],'source'=>'JPX_BUILTIN_2026_2027'];
+    return['holidays'=>[],'early_closes'=>[],'source'=>''];
+}
 function tb_market_calendar_data(array $c,string $market): array
 {
-    $file=(string)($c['calendar_file']??'');if($file===''||!is_file($file))return['holidays'=>[],'early_closes'=>[]];$calendar=include $file;if(!is_array($calendar))return['holidays'=>[],'early_closes'=>[]];$m=strtoupper($market);$rows=$calendar[$m]??$calendar[strtolower($m)]??[];if(!is_array($rows))return['holidays'=>[],'early_closes'=>[]];return['holidays'=>is_array($rows['holidays']??null)?$rows['holidays']:[],'early_closes'=>is_array($rows['early_closes']??null)?$rows['early_closes']:[]];
+    $m=strtoupper($market);$built=tb_market_builtin_calendar_data($m);$rows=[];
+    $file=(string)($c['calendar_file']??'');
+    if($file!==''&&is_file($file)){$calendar=@include $file;if(is_array($calendar)){$candidate=$calendar[$m]??$calendar[strtolower($m)]??[];if(is_array($candidate))$rows=$candidate;}}
+    $set=tb_market_date_set((array)($built['holidays']??[]));
+    foreach(tb_market_date_set((array)($rows['holidays']??[]))as$d=>$v)$set[$d]=true;
+    // Optional local override for an exchange schedule amendment after this package was frozen.
+    foreach(tb_market_date_set((array)($rows['open_dates']??[]))as$d=>$v)unset($set[$d]);
+    $holidays=array_keys($set);sort($holidays,SORT_STRING);
+    $early=array_replace((array)($built['early_closes']??[]),is_array($rows['early_closes']??null)?$rows['early_closes']:[]);
+    $source=[];if(!empty($built['source']))$source[]=(string)$built['source'];if(!empty($rows))$source[]='market_calendar.local.php';
+    return['holidays'=>$holidays,'early_closes'=>$early,'source'=>implode('+',$source)];
 }
 function tb_calendar_holiday(array $c,string $market,string $date): bool{$d=tb_market_calendar_data($c,$market);return in_array($date,$d['holidays'],true)||!empty($d['holidays'][$date]);}
 function tb_market_date(string $market): string{$tz=strtoupper($market)==='US'?'America/New_York':(strtoupper($market)==='JP'?'Asia/Tokyo':'Asia/Seoul');return(new DateTime('now',new DateTimeZone($tz)))->format('Y-m-d');}
