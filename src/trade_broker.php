@@ -1,7 +1,7 @@
 <?php
 /**
  * trade_broker.php
- * Trade Broker v5.9.8 — 3+1 v1.4 · exchange-map recovery · SINGLE_FILE_PAPER runtime authority · auto-approval telemetry
+ * Trade Broker v5.9.9 — 3+1 v1.4 · numeric exchange-map key preservation · SINGLE_FILE_PAPER runtime authority · auto-approval telemetry
  * PHP 7.4 compatible
  *
  * 역할
@@ -23,8 +23,8 @@ error_reporting(E_ALL);
 @ini_set('memory_limit','128M');
 @set_time_limit(0);
 
-const TB_VERSION='v5.9.8 3PLUS1-v1.4 · EXCHANGE-MAP-RECOVERY · RUNTIME-AUTHORITY-UNIFIED · AUTO-APPROVAL-TELEMETRY · STUCK-SELL-RECOVERY';
-const TB_REV='trade-broker-v598-exchange-map-recovery-20260923-r1';
+const TB_VERSION='v5.9.9 3PLUS1-v1.4 · NUMERIC-EXCHANGE-KEY-PRESERVE · EXCHANGE-MAP-RECOVERY · RUNTIME-AUTHORITY-UNIFIED · AUTO-APPROVAL-TELEMETRY · STUCK-SELL-RECOVERY';
+const TB_REV='trade-broker-v599-numeric-exchange-key-preserve-20260923-r1';
 const TB_SCHEMA='te_v25';
 const TB_HTTP_CONNECT_TIMEOUT=5;
 const TB_HTTP_TIMEOUT=15;
@@ -119,7 +119,12 @@ function tb_config(): array
     $operationalTradeExchangeMap=tb_trade_list_exchange_map($operationalTradeListFile);
     $tradeExchangeMap=tb_trade_list_exchange_map($tradeListFile);
     $configExchangeMap=array_merge(tb_exchange_map(tb_const('US_EXCHANGE_MAP',[])),tb_exchange_map(tb_const('JP_EXCHANGE_MAP',[])));
-    $resolvedExchangeMap=array_merge($operationalTradeExchangeMap,$tradeExchangeMap,$configExchangeMap);
+    // ORDER_EXCHANGE_NUMERIC_SYMBOL_KEY_PRESERVE
+    // JP symbols such as "5803" become integer array keys in PHP. array_merge()
+    // renumbers integer keys (5803 -> 0..N), silently destroying JP symbol lookup.
+    // array_replace() preserves those integer keys while retaining override order:
+    // operational list < configured trade list < explicit config map.
+    $resolvedExchangeMap=array_replace($operationalTradeExchangeMap,$tradeExchangeMap,$configExchangeMap);
     $strategyRegistry=tb_strategy_registry(tb_const('KIS_STRATEGY_REGISTRY',[]));$strategyRuntimeMap=[];foreach(array_keys($strategyRegistry)as$rk)$strategyRuntimeMap[$rk]=__DIR__.'/'.$rk.'_runtime';
     $defaultKeys=implode(',',array_keys($strategyRegistry));$legacyFiles=[];foreach(array_keys($strategyRegistry)as$key)$legacyFiles[]=$key.'.php';$defaultFiles=implode(',',array_merge(array_values($strategyRegistry),$legacyFiles));
     $requestedSymbolStrategyCount=max(1,(int)tb_const('MAX_SYMBOL_STRATEGY_COUNT',1));
