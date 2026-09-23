@@ -5,7 +5,7 @@ $root = dirname(__DIR__) . '/src';
 
 $expected = [
     'trade_engine.php' => 'trade-engine-v446-sell-exchange-provenance-20260923-r1',
-    'trade_broker.php' => 'trade-broker-v598-exchange-map-recovery-20260923-r1',
+    'trade_broker.php' => 'trade-broker-v599-numeric-exchange-key-preserve-20260923-r1',
     'trade_runner.php' => 'trade-low-load-runner-v146-approval-actionable-gate-20260923-r1',
     'trade_runner_control.php' => 'trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1',
     'trade_runner_preflight.php' => 'trade-low-load-runner-web-preflight-v146-order-path-recovery-20260923-r2',
