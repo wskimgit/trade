@@ -14,7 +14,7 @@ date_default_timezone_set('Asia/Seoul');
 error_reporting(E_ALL);
 
 const PF_VERSION='v1.4.6';
-const PF_REV='trade-low-load-runner-web-preflight-v146-dashboard-v3410-contract-20260923-r4';
+const PF_REV='trade-low-load-runner-web-preflight-v146-status-execution-truth-20260923-r5';
 
 function pf_add(array &$checks,string $name,bool $ok,$detail='',string $severity='hard'): void {
     $checks[]=['name'=>$name,'ok'=>$ok,'severity'=>$severity,'detail'=>$detail];
@@ -68,7 +68,6 @@ $exact=[
  'trade_runner.php'=>'41b0700a277a10127bf481fde49f290cb5f934ef87ff64ec04c2238005feaefb',
  'trade_runner_config.php'=>'2e12b834b80c7066333080201268cb7c255d9c62ec3481ce36964b71f9bfa268',
  'trade_runner_control.php'=>'65b9b5357d5bdb90370bb61abda711d1d5e0d5f33ad023133ec09ede02b530c8',
- 'trade_runner_status.php'=>'6e9c749e7f5c08ae2e6e42bf74b4ced3665a2e89453ccd3f858a88f2a9304b28',
  'trade_validation.php'=>'94fcbd660fcd722c9a28be82df821e07157b36b7af622af70a09cd1798f652d8',
  'trade_validation_repair.php'=>'194d9e526f36e941f51463d09b14d22fc66922df3958a06c0acb3acecfa044b4',
  'trade_pipeline_diag.php'=>'c00379e416df899057864ebd97b47000a743c69a51b956e6b483cd50e18ea801',
@@ -79,6 +78,7 @@ pf_add($checks,'Engine v4.4.6 identity',pf_source_has($base.'/trade_engine.php',
 pf_add($checks,'Broker v5.9.10 identity',pf_source_has($base.'/trade_broker.php','trade-broker-v5910-jpx-builtin-calendar-parity-20260923-r1')&&pf_source_has($base.'/trade_broker.php','ORDER_EXCHANGE_NUMERIC_SYMBOL_KEY_PRESERVE')&&pf_source_has($base.'/trade_broker.php','BROKER_JPX_BUILTIN_CALENDAR_PARITY'),'numeric JP symbol exchange-map preservation + JPX built-in calendar parity');
 pf_add($checks,'Runner v1.4.6 identity',pf_source_has($base.'/trade_runner.php','trade-low-load-runner-v146-approval-actionable-gate-20260923-r1'),'approval/actionable gate');
 pf_add($checks,'Runner Control v1.4.6 identity',pf_source_has($base.'/trade_runner_control.php','trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1'),'control version gate');
+pf_add($checks,'Runner Status v1.4.6 execution truth',pf_source_has($base.'/trade_runner_status.php','trade-low-load-runner-status-v146-execution-truth-20260923-r1')&&pf_source_has($base.'/trade_runner_status.php','RUNNER_STATUS_EXECUTION_TRUTH_V1'),'status uses Broker execution truth instead of stale Canonical-only gate');
 pf_add($checks,'3+1 Preflight v1.3.17 identity',pf_source_has($base.'/trade_3plus1_preflight.php','trade-3plus1-preflight-v1317-dashboard-validation-single-surface-20260923-r1'),'dashboard validation single-surface contract');
 
 $auth=pf_json($base.'/trade_phase3b_lite_v100/authority.json');
