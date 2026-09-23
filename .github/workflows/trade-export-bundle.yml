@@ -1,0 +1,35 @@
+name: Trade Export Bundle
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "src/trade_export.php"
+      - "src/trade_dashboard.php"
+      - "src/trade_3plus1_preflight.php"
+      - ".github/workflows/trade-export-bundle.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p bundle
+          cp src/trade_export.php bundle/
+          cp src/trade_dashboard.php bundle/
+          cp src/trade_3plus1_preflight.php bundle/
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: TRADE_EXPORT_FIX_V349_V1314
+          path: bundle/
+          if-no-files-found: error
+          retention-days: 7
