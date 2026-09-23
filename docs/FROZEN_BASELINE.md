@@ -30,7 +30,7 @@ The minimal recovery line is:
 - Runner v1.4.6 — `trade-low-load-runner-v146-approval-actionable-gate-20260923-r1`
 - Runner Control v1.4.6 — `trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1`
 - Dashboard v3.4.10 — `trade-dashboard-v3410-validation-single-surface-20260923-r1`
-- Preflight v1.3.16 — `trade-3plus1-preflight-v1316-order-path-recovery-contract-20260923-r1`
+- Preflight v1.3.17 — `trade-3plus1-preflight-v1317-dashboard-validation-single-surface-20260923-r1`
 - Export v1.0.1 — `trade-export-v101-full-engine-config-mobile-safe-download-20260923-r1`
 
 Validation and all four strategy files are unchanged.
