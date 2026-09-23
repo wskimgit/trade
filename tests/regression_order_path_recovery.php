@@ -36,7 +36,12 @@ $check('operational trade list resolves JP 5803 venue',($map['5803']??'')==='TKS
 
 $c=['exchange_map'=>$map,'us_exchange_map'=>$map];
 $resolved=tb_exchange($c,['market'=>'JP','symbol'=>'5803','exchange'=>'']);
-$check('Broker resolves blank JP 5803 order exchange from map',$resolved==='TKSE',$resolved);
+$check('Broker resolves blank JP 5803 order exchange from direct map',$resolved==='TKSE',$resolved);
+
+$liveCfg=tb_config();
+$check('Broker merged config preserves numeric JP 5803 key',isset($liveCfg['exchange_map']['5803'])&&$liveCfg['exchange_map']['5803']==='TKSE',$liveCfg['exchange_map']['5803']??'MISSING');
+$resolvedLive=tb_exchange($liveCfg,['market'=>'JP','symbol'=>'5803','exchange'=>'']);
+$check('Broker live config resolves blank JP 5803 order exchange',$resolvedLive==='TKSE',$resolvedLive);
 
 $engine=(string)file_get_contents(dirname(__DIR__).'/src/trade_engine.php');
 $check('Engine SELL exchange provenance marker installed',strpos($engine,'SELL_EXCHANGE_POSITION_FALLBACK')!==false);
