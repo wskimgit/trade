@@ -14,7 +14,7 @@ date_default_timezone_set('Asia/Seoul');
 error_reporting(E_ALL);
 
 const PF_VERSION='v1.4.6';
-const PF_REV='trade-low-load-runner-web-preflight-v146-order-path-recovery-20260923-r3';
+const PF_REV='trade-low-load-runner-web-preflight-v146-dashboard-v3410-contract-20260923-r4';
 
 function pf_add(array &$checks,string $name,bool $ok,$detail='',string $severity='hard'): void {
     $checks[]=['name'=>$name,'ok'=>$ok,'severity'=>$severity,'detail'=>$detail];
