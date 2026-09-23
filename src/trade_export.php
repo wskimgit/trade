@@ -8,8 +8,8 @@
 declare(strict_types=1);
 date_default_timezone_set('Asia/Seoul');
 
-const TX_VERSION='v1.0.0';
-const TX_REV='trade-export-v100-dedicated-mobile-safe-download-20260923-r1';
+const TX_VERSION='v1.0.1';
+const TX_REV='trade-export-v101-full-engine-config-mobile-safe-download-20260923-r1';
 
 if(PHP_SAPI==='cli'){
     fwrite(STDERR,"WEB ONLY\n");
@@ -63,7 +63,9 @@ if(!function_exists($spec)||!function_exists('te_analysis_build_json')){
     exit;
 }
 
-$cfg=$spec();
+$rawSpec=$spec();
+$cfg=te_config($rawSpec);
+te_dirs($cfg);
 $built=te_analysis_build_json($cfg,$unified?'':$strategy,$unified);
 if(empty($built['ok'])||!isset($built['json'])){
     while(ob_get_level()>0)@ob_end_clean();
