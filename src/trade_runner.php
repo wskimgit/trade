@@ -1,6 +1,6 @@
 <?php
 /**
- * Trade Low-Load Runner v1.4.5
+ * Trade Low-Load Runner v1.4.6
  * Adaptive ultra-low-load serialized scheduler for Phase 3B-Lite SINGLE_FILE_PAPER.
  * PHP 7.4+
  *
@@ -40,8 +40,8 @@ error_reporting(E_ALL);
 @ini_set('memory_limit','64M');
 @set_time_limit(0);
 
-const TR_VERSION='v1.4.5';
-const TR_REV='trade-low-load-runner-v145-execution-truth-strategy-freshness-watchdog-20260922-r4';
+const TR_VERSION='v1.4.6';
+const TR_REV='trade-low-load-runner-v146-approval-actionable-gate-20260923-r1';
 const TR_MARKET_CALENDAR_REV='JPX_2026_2027_R1';
 const TR_STATE_SCHEMA='trade_runner_state_v1';
 const TR_REQUIRED_AUTH='SINGLE_FILE_PAPER';
@@ -184,11 +184,22 @@ function tr_market_wait_message(array $o): bool {
 }
 function tr_market_wait_class(array $o,int $epoch): array {
     $msg=strtoupper(trim((string)($o['broker_message']??'')));
+    $status=strtoupper(trim((string)($o['status']??'')));
+    $approved=!empty($o['approved']);
+    $approvalBlock=trim((string)($o['approval_block_reason']??''));
+
+    // APPROVAL_BLOCK_ACTIONABLE_GATE
+    // An order that Broker still needs to validate/approve is actionable even while its
+    // market is closed. Otherwise SESSION_CLOSED_HINT can starve Broker repair for days.
+    if($approvalBlock!=='')return['wait'=>false,'source'=>'APPROVAL_BLOCK_ACTIONABLE'];
+    if($status==='PENDING'&&!$approved)return['wait'=>false,'source'=>'PENDING_APPROVAL_ACTIONABLE'];
+
     if($msg==='WAIT_MARKET_OPEN')return['wait'=>true,'source'=>'BROKER_MESSAGE'];
     $m=strtoupper((string)($o['market']??''));
-    // v1.3.4 fallback: the Single-Authority mirror can leave broker_message empty on an INTENT.
-    // Outside a known regular session, PAPER Broker cannot fill because PAPER_MARKET_HOURS_GATE is ON.
-    if($msg===''&&in_array($m,['KR','JP','US'],true)&&!tr_market_regular_open_now($m,$epoch))return['wait'=>true,'source'=>'SESSION_CLOSED_HINT'];
+    $brokerOwnedExecution=$approved||in_array($status,['APPROVED','SENT','WORKING','PARTIAL','CANCEL_REQUESTED'],true);
+    // SESSION_CLOSED_HINT is only a wake hint after Broker-side approval/submission.
+    // Canonical-only INTENT/PENDING rows remain fail-safe ACTIONABLE.
+    if($msg===''&&$brokerOwnedExecution&&in_array($m,['KR','JP','US'],true)&&!tr_market_regular_open_now($m,$epoch))return['wait'=>true,'source'=>'SESSION_CLOSED_HINT'];
     return['wait'=>false,'source'=>''];
 }
 function tr_market_timezone(string $market): string {
