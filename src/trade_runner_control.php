@@ -1,6 +1,6 @@
 <?php
 /**
- * Trade Low-Load Runner Web Control v1.4.5
+ * Trade Low-Load Runner Web Control v1.4.6
  * START/STOP/STATUS from browser only. No .sh file and no recurring cron required.
  * PHP 7.4+
  */
@@ -9,10 +9,10 @@ date_default_timezone_set('Asia/Seoul');
 @ini_set('display_errors','0');
 error_reporting(E_ALL);
 
-const RC_VERSION='v1.4.5';
-const RC_REV='trade-low-load-runner-web-control-v145-startup-health-detail-20260922-r3';
+const RC_VERSION='v1.4.6';
+const RC_REV='trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1';
 const RC_REQUIRED_AUTH='SINGLE_FILE_PAPER';
-const RC_EXPECTED_RUNNER_VERSION='v1.4.5';
+const RC_EXPECTED_RUNNER_VERSION='v1.4.6';
 
 function rc_base(): string {
     $e=(string)getenv('TRADE_BASE_DIR');
