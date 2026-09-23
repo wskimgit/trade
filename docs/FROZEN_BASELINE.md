@@ -1,66 +1,60 @@
-# Frozen Baseline
+# Frozen Baseline and Current Hotfix Line
 
-Baseline label: **3+1 Trade v1.4 FROZEN**
+## Historical frozen baseline
 
-This file records the last known stable development contract transferred from ChatGPT.
+Baseline label: **3+1 Trade v1.4 FROZEN — 2026-09-22**
 
-## Execution baseline
+The last confirmed frozen execution line before the 2026-09-23 diagnostic hotfix was:
 
-- trade_engine.php: v4.4.5
-  - revision: `trade-engine-v445-single-file-runtime-authority-20260922-r2`
-- trade_broker.php: v5.9.7
-  - revision: `trade-broker-v597-single-file-runtime-authority-20260922-r2`
-- trade_validation.php: v1.3.1
-  - revision: `trade-validation-v131-explicit-legacy-recovery-wal-20260921-r1`
-- trade_runner.php: v1.4.5 r4
-- trade_runner_control.php: v1.4.5
+- Engine v4.4.5 — `trade-engine-v445-single-file-runtime-authority-20260922-r2`
+- Broker v5.9.7 — `trade-broker-v597-single-file-runtime-authority-20260922-r2`
+- Validation v1.3.1 — `trade-validation-v131-explicit-legacy-recovery-wal-20260921-r1`
+- Runner v1.4.5 r4 — `trade-low-load-runner-v145-execution-truth-strategy-freshness-watchdog-20260922-r4`
+- Runner Control v1.4.5 — `trade-low-load-runner-web-control-v145-startup-health-detail-20260922-r3`
 
-Strategies:
+Strategies remain unchanged:
 
-- DTS: `dts-v254-market-timezone-hard-stale-recovery-contract-20260912-r1`
-- ABC: `abc-v542-market-timezone-bar-date-20260912-r1`
-- DAS: `das-v303-market-timezone-data-timestamp-20260912-r1`
-- STC26: `stc26-v301-daily-opportunity-shadow-20260910-r1`
+- DTS — `dts-v254-market-timezone-hard-stale-recovery-contract-20260912-r1`
+- ABC — `abc-v542-market-timezone-bar-date-20260912-r1`
+- DAS — `das-v303-market-timezone-data-timestamp-20260912-r1`
+- STC26 — `stc26-v301-daily-opportunity-shadow-20260910-r1`
 
-Current dashboard handoff line:
+## Current development hotfix line — 2026-09-23
 
-- Dashboard: v3.4.8 ALERT-ACK
-  - revision: `trade-dashboard-v348-alert-ack-state-machine-20260922-r1`
-- Preflight: v1.3.13
-  - revision: `trade-3plus1-preflight-v1313-dashboard-alert-ack-contract-20260922-r1`
+A live UNIFIED export showed one long-lived JP SELL order that remained PENDING with a missing exchange code while Broker execution was stale. Source review also showed that Runner could classify an unapproved PENDING order as SESSION_CLOSED_HINT solely because the market was closed.
+
+The minimal recovery line is:
+
+- Engine v4.4.6 — `trade-engine-v446-sell-exchange-provenance-20260923-r1`
+- Broker v5.9.8 — `trade-broker-v598-exchange-map-recovery-20260923-r1`
+- Runner v1.4.6 — `trade-low-load-runner-v146-approval-actionable-gate-20260923-r1`
+- Runner Control v1.4.6 — `trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1`
+- Dashboard v3.4.9 — `trade-dashboard-v349-dedicated-export-route-20260923-r1`
+- Preflight v1.3.16 — `trade-3plus1-preflight-v1316-order-path-recovery-contract-20260923-r1`
+- Export v1.0.1 — `trade-export-v101-full-engine-config-mobile-safe-download-20260923-r1`
+
+Validation and all four strategy files are unchanged.
 
 ## Operating authority
 
 - Authority: `SINGLE_FILE_PAPER`
 - REAL: false
-- Runner is scheduling authority.
-- Broker policy: EVENT / low-load runner controlled.
-- SWING: retired.
-- Legacy runtime copies are non-authoritative.
-- Active positions require preservation of relevant strategy runtime state.
-
-## Cadence
-
-- DTS: 60 seconds
-- ABC: 1200 seconds
-- DAS: 1200 seconds
-- STC26: 1200 seconds
-
-Runner/Broker cadence is low-load and event-aware; exact current timing must be verified from source/runtime before modification.
+- Runner remains scheduling authority.
+- SWING remains retired.
+- Legacy runtime copies remain non-authoritative.
+- Active-position runtime state must be preserved.
 
 ## Semantics that must not regress
 
+- Broker execution truth overrides stale canonical mirrors.
+- Unapproved or approval-blocked PENDING orders are ACTIONABLE, not MARKET_WAIT.
+- SESSION_CLOSED_HINT is only a wake hint for Broker-approved/submitted execution state.
+- Missing US/JP exchange metadata may be resolved only from normalized configured/operational trade-list mappings; never invented.
+- New SELL intents recover venue metadata from their existing active position before intent signing when context lost it.
 - No duplicate scheduler authority.
-- No canonical-state resurrection after terminal execution truth.
-- Actionable Broker work must retrigger within a bounded interval.
-- MARKET_WAIT + actionable=0 is informational/normal.
-- Strategy stale watchdog must prevent indefinite starvation.
-- Engine runtime identity should come from runtime evidence with explicit source priority.
+- No active runtime deletion while positions exist.
 - Warning acknowledgement is separate from execution state.
-- Public repository must not contain credentials or real runtime state.
 
-## Production evidence rule
+## Evidence rule
 
-This document is a development handoff baseline, not live production evidence.
-
-Codex must not claim a production PASS unless live runtime output is independently observed after deployment.
+The 2026-09-23 hotfix is locally/CI verified until deployed. Do not call it production PASS until live Runner/Broker/strategy evidence is observed after deployment.
