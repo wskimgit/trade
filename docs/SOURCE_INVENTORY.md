@@ -11,9 +11,9 @@ Current ChatGPT → Codex handoff inventory.
 | src/trade_runner.php | v1.4.6 / trade-low-load-runner-v146-approval-actionable-gate-20260923-r1 | IMPORTED |
 | src/trade_runner_control.php | v1.4.6 / trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1 | IMPORTED |
 | src/trade_runner_status.php | v1.4.6 / trade-low-load-runner-status-v146-execution-truth-20260923-r1 | IMPORTED |
-| src/trade_runner_preflight.php | v1.4.6 / trade-low-load-runner-web-preflight-v146-dashboard-header-cleanup-20260923-r6 | IMPORTED |
-| src/trade_dashboard.php | v3.4.11 / trade-dashboard-v3411-header-cleanup-20260923-r1 | IMPORTED |
-| src/trade_3plus1_preflight.php | v1.3.18 / trade-3plus1-preflight-v1318-dashboard-header-cleanup-20260923-r1 | IMPORTED |
+| src/trade_runner_preflight.php | v1.4.6 / trade-low-load-runner-web-preflight-v146-dashboard-header-cleanup-20260923-r7 | IMPORTED |
+| src/trade_dashboard.php | v3.4.11 / trade-dashboard-v3411-header-cleanup-20260923-r2 | IMPORTED |
+| src/trade_3plus1_preflight.php | v1.3.18 / trade-3plus1-preflight-v1318-dashboard-header-cleanup-20260923-r2 | IMPORTED |
 | src/trade_export.php | v1.0.1 / trade-export-v101-full-engine-config-mobile-safe-download-20260923-r1 | IMPORTED |
 | src/trade_validation.php | v1.3.1 / trade-validation-v131-explicit-legacy-recovery-wal-20260921-r1 | IMPORTED |
 | src/trade_list.php | v1.9.0 / trade_universe_contract_v2 | IMPORTED |
