@@ -10,7 +10,8 @@ Current ChatGPT → Codex handoff inventory.
 | src/trade_broker.php | v5.9.10 / trade-broker-v5910-jpx-builtin-calendar-parity-20260923-r1 | IMPORTED |
 | src/trade_runner.php | v1.4.6 / trade-low-load-runner-v146-approval-actionable-gate-20260923-r1 | IMPORTED |
 | src/trade_runner_control.php | v1.4.6 / trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1 | IMPORTED |
-| src/trade_runner_preflight.php | v1.4.6 / trade-low-load-runner-web-preflight-v146-dashboard-v3410-contract-20260923-r4 | IMPORTED |
+| src/trade_runner_status.php | v1.4.6 / trade-low-load-runner-status-v146-execution-truth-20260923-r1 | IMPORTED |
+| src/trade_runner_preflight.php | v1.4.6 / trade-low-load-runner-web-preflight-v146-status-execution-truth-20260923-r5 | IMPORTED |
 | src/trade_dashboard.php | v3.4.10 / trade-dashboard-v3410-validation-single-surface-20260923-r1 | IMPORTED |
 | src/trade_3plus1_preflight.php | v1.3.17 / trade-3plus1-preflight-v1317-dashboard-validation-single-surface-20260923-r1 | IMPORTED |
 | src/trade_export.php | v1.0.1 / trade-export-v101-full-engine-config-mobile-safe-download-20260923-r1 | IMPORTED |
@@ -42,3 +43,5 @@ Use the exact files in `src/` as the starting baseline. Preserve PHP 7.4 compati
 Do not copy live runtime state, broker/order/position logs, credentials, local broker config, tokens, certificates, account-specific snapshots, or live `trade_single_compat` runtime contents into this public repository. Use synthetic fixtures for tests.
 
 - Dashboard v3.4.10: validation summary is shown once in the operational overview; duplicated per-strategy validation rows were removed from the four strategy cards.
+
+- Runner Status v1.4.6: displays the execution order gate (`BROKER_EXECUTION_PLUS_CANONICAL_FALLBACK`) as operational truth; a MARKET_WAIT-only order does not appear as BROKER FIRST.
