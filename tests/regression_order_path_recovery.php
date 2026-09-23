@@ -43,6 +43,18 @@ $check('Broker merged config preserves numeric JP 5803 key',isset($liveCfg['exch
 $resolvedLive=tb_exchange($liveCfg,['market'=>'JP','symbol'=>'5803','exchange'=>'']);
 $check('Broker live config resolves blank JP 5803 order exchange',$resolvedLive==='TKSE',$resolvedLive);
 
+$jpOrder=['market'=>'JP','symbol'=>'5803'];
+$jpTz=new DateTimeZone('Asia/Tokyo');
+$jpClosed=[
+    new DateTimeImmutable('2026-09-21 10:00:00',$jpTz),
+    new DateTimeImmutable('2026-09-22 10:00:00',$jpTz),
+    new DateTimeImmutable('2026-09-23 13:00:00',$jpTz),
+];
+$closedOk=true;foreach($jpClosed as $dt)if(tb_market_open_at($liveCfg,$jpOrder,$dt))$closedOk=false;
+$check('Broker JPX builtin closes 2026-09-21/22/23',$closedOk);
+$jpOpen=new DateTimeImmutable('2026-09-24 09:00:00',$jpTz);
+$check('Broker JPX next regular session opens 2026-09-24 09:00',tb_market_open_at($liveCfg,$jpOrder,$jpOpen));
+
 $engine=(string)file_get_contents(dirname(__DIR__).'/src/trade_engine.php');
 $check('Engine SELL exchange provenance marker installed',strpos($engine,'SELL_EXCHANGE_POSITION_FALLBACK')!==false);
 $check('Engine normal SELL path uses position exchange recovery',strpos($engine,'te_sell_order_context($ctx,$p,$q,$tick)')!==false);
