@@ -29,6 +29,7 @@ The minimal recovery line is:
 - Broker v5.9.10 — `trade-broker-v5910-jpx-builtin-calendar-parity-20260923-r1`
 - Runner v1.4.6 — `trade-low-load-runner-v146-approval-actionable-gate-20260923-r1`
 - Runner Control v1.4.6 — `trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1`
+- Runner Status v1.4.6 — `trade-low-load-runner-status-v146-execution-truth-20260923-r1`
 - Dashboard v3.4.10 — `trade-dashboard-v3410-validation-single-surface-20260923-r1`
 - Preflight v1.3.17 — `trade-3plus1-preflight-v1317-dashboard-validation-single-surface-20260923-r1`
 - Export v1.0.1 — `trade-export-v101-full-engine-config-mobile-safe-download-20260923-r1`
@@ -56,6 +57,7 @@ Validation and all four strategy files are unchanged.
 - No duplicate scheduler authority.
 - No active runtime deletion while positions exist.
 - Warning acknowledgement is separate from execution state.
+- Runner Status must display Broker execution truth, not stale Canonical-only priority; MARKET_WAIT-only state permits strategy execution.
 
 ## Evidence rule
 
