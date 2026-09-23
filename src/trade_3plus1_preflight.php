@@ -141,6 +141,7 @@ $add('Dashboard smart visual command center',strpos($dashSrc,'4전략 한눈에'
 $add('Dashboard market-wait semantics',strpos($dashSrc,'market_wait_recheck_at')!==false&&strpos($dashSrc,'Broker 상태')!==false&&strpos($dashSrc,'시장대기')!==false,'scheduled market wait separated from broker failure age');
 $add('Dashboard progressive disclosure',strpos($dashSrc,'검증 상세')!==false&&strpos($dashSrc,'성과 상세 분석')!==false&&strpos($dashSrc,'브로커 관리·진단')!==false,'detail-heavy information collapsed by default');
 $add('Dashboard validation pending visibility',strpos($dashSrc,'판정 대기')!==false&&strpos($dashSrc,'validation-sub')!==false,'resolved progress and pending samples shown together');
+$add('Dashboard validation single surface',strpos($dashSrc,'VALIDATION_SINGLE_SURFACE_V1')!==false&&strpos($dashSrc,'검증 진행 · 전체 요약')!==false&&strpos($dashSrc,'<span class="label">검증</span>')===false,'validation summary appears once in operations overview; strategy cards do not duplicate it');
 $add('Dashboard order timeline',strpos($dashSrc,'order-timeline')!==false&&strpos($dashSrc,'최근 5건')!==false&&strpos($dashSrc,'사유 보기')!==false,'mobile-first recent order cards');
 $add('Dashboard future-time label',strpos($dashSrc,'다음 확인')!==false&&strpos($dashSrc,"date('m/d H:i'")!==false,'future market-wait time explicitly labeled');
 $add('Dashboard STC26 PAPER ONLY',strpos($dashSrc,'PAPER ONLY')!==false,'challenger safety role remains visible');
@@ -159,7 +160,7 @@ $expected=[
  ['stc26.php','stc26-v301-daily-opportunity-shadow-20260910-r1','CHALLENGER','OVERSOLD_REVERSAL'],
  ['trade_engine.php','trade-engine-v446-sell-exchange-provenance-20260923-r1','',''],
  ['trade_broker.php','trade-broker-v5910-jpx-builtin-calendar-parity-20260923-r1','',''],
- ['trade_dashboard.php','trade-dashboard-v349-dedicated-export-route-20260923-r1','',''],
+ ['trade_dashboard.php','trade-dashboard-v3410-validation-single-surface-20260923-r1','',''],
 ];
 foreach($expected as$e){$r=p3_check_source($root,$e[0],$e[1],$e[2],$e[3]);$checks[]=$r;if(!$r['ok'])$ok=false;}
 
