@@ -7,7 +7,7 @@ Current ChatGPT → Codex handoff inventory.
 | File | Current identity | Status |
 |---|---|---|
 | src/trade_engine.php | v4.4.6 / trade-engine-v446-sell-exchange-provenance-20260923-r1 | IMPORTED |
-| src/trade_broker.php | v5.9.8 / trade-broker-v598-exchange-map-recovery-20260923-r1 | IMPORTED |
+| src/trade_broker.php | v5.9.9 / trade-broker-v599-numeric-exchange-key-preserve-20260923-r1 | IMPORTED |
 | src/trade_runner.php | v1.4.6 / trade-low-load-runner-v146-approval-actionable-gate-20260923-r1 | IMPORTED |
 | src/trade_runner_control.php | v1.4.6 / trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1 | IMPORTED |
 | src/trade_runner_preflight.php | v1.4.6 / trade-low-load-runner-web-preflight-v146-order-path-recovery-20260923-r2 | IMPORTED |
@@ -26,7 +26,7 @@ Current ChatGPT → Codex handoff inventory.
 The execution core was advanced from the 2026-09-22 frozen baseline only where live exported evidence showed a concrete defect:
 
 - Runner: unapproved/approval-blocked PENDING orders remain ACTIONABLE even during a closed session.
-- Broker: current operational `trade_list.php` is an exchange-map fallback even when `TRADE_LIST_FILE` points at an older list.
+- Broker: current operational `trade_list.php` is an exchange-map fallback even when `TRADE_LIST_FILE` points at an older list; numeric-string JP symbols such as `5803` are merged with key-preserving `array_replace()` rather than `array_merge()`.
 - Engine: SELL intent context recovers a blank exchange from the already-open Broker-confirmed position before the intent is signed.
 - Runner Control and Preflight were advanced coherently with those changes.
 
