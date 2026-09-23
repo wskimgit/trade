@@ -9,7 +9,7 @@ declare(strict_types=1);
 date_default_timezone_set('Asia/Seoul');
 
 const P3_VERSION='v1.3.18';
-const P3_REV='trade-3plus1-preflight-v1318-dashboard-header-cleanup-20260923-r1';
+const P3_REV='trade-3plus1-preflight-v1318-dashboard-header-cleanup-20260923-r2';
 
 function p3_read(string $f): string{return is_file($f)?(string)@file_get_contents($f):'';}
 function p3_json(string $f,array $d=[]): array{if(!is_file($f))return$d;$x=json_decode((string)@file_get_contents($f),true);return is_array($x)?$x:$d;}
@@ -160,7 +160,7 @@ $expected=[
  ['stc26.php','stc26-v301-daily-opportunity-shadow-20260910-r1','CHALLENGER','OVERSOLD_REVERSAL'],
  ['trade_engine.php','trade-engine-v446-sell-exchange-provenance-20260923-r1','',''],
  ['trade_broker.php','trade-broker-v5910-jpx-builtin-calendar-parity-20260923-r1','',''],
- ['trade_dashboard.php','trade-dashboard-v3411-header-cleanup-20260923-r1','',''],
+ ['trade_dashboard.php','trade-dashboard-v3411-header-cleanup-20260923-r2','',''],
 ];
 foreach($expected as$e){$r=p3_check_source($root,$e[0],$e[1],$e[2],$e[3]);$checks[]=$r;if(!$r['ok'])$ok=false;}
 
