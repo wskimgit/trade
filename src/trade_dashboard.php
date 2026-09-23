@@ -1,6 +1,6 @@
 <?php
 /**
- * TRADE DASHBOARD v3.4.9 · ERRC
+ * TRADE DASHBOARD v3.4.10 · ERRC
  * 3+1 v1.4 unified dashboard: CORE DTS/ABC/DAS + CHALLENGER STC26 + Validation/Broker. SWING removed.
  * Target: Synology DS213 Air / PHP 7.4 compatible.
  *
@@ -17,11 +17,11 @@ if (PHP_SAPI !== 'cli' && !headers_sent()) {
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     header('Pragma: no-cache');
     header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
-    header('X-Trade-Dashboard-Revision: trade-dashboard-v349-dedicated-export-route-20260923-r1');
+    header('X-Trade-Dashboard-Revision: trade-dashboard-v3410-validation-single-surface-20260923-r1');
 }
 
-const TD_VERSION = 'v3.4.9 3+1-v1.4 · EXPORT-FIX · ALERT-ACK · SMART-VISUAL · LOW-LOAD · ERRC';
-const TD_REV = 'trade-dashboard-v349-dedicated-export-route-20260923-r1';
+const TD_VERSION = 'v3.4.10 3+1-v1.4 · VALIDATION-SINGLE-SURFACE · EXPORT-FIX · ALERT-ACK · SMART-VISUAL · LOW-LOAD · ERRC';
+const TD_REV = 'trade-dashboard-v3410-validation-single-surface-20260923-r1';
 const TD_EXPECTED_OPERATIONAL_FILENAME = 'trade_dashboard.php';
 const TD_REFRESH_SEC = 0; // 0 = no auto refresh. Add ?refresh=60 for optional refresh.
 const TD_STRATEGY_TICK_WARN_SEC = 5400; // 30분 cron 3회(90분) 이상 미실행 시 경고.
@@ -37,6 +37,7 @@ const TD_ACTIVE_ORDER_WARN_SEC = 900; // staged PAPER fill(300~900s) 정상 대�
 const TD_JP_REQUOTE_UI_MARKER = 'JP_REQUOTE_UI_OBSERVABILITY_V1';
 const TD_ERRC_MARKER = 'ERRC_STAT_SEMANTICS_V1';
 const TD_VALIDATION_PROVISIONAL_MARKER = 'VALIDATION_PROVISIONAL_GATE_V1';
+const TD_VALIDATION_SINGLE_SURFACE_MARKER = 'VALIDATION_SINGLE_SURFACE_V1';
 const TD_MIN_STAT_SAMPLE = 30;
 const TD_ALERT_ACK_SCHEMA = 'trade_dashboard_alert_ack_v1';
 const TD_ALERT_ACK_MARKER = 'ALERT_ACK_STATE_MACHINE_V1';
@@ -2393,7 +2394,7 @@ $refresh = isset($_GET['refresh']) ? max(0, min(300, (int)$_GET['refresh'])) : T
         </div>
 
         <div class="visual-box">
-          <h3>검증 진행</h3>
+          <h3>검증 진행 · 전체 요약</h3>
           <?php foreach($TD_STRATEGIES as $vk=>$vm): $vname=strtoupper((string)($vm['label']??$vk));$vr=$visualValidationByStrategy[$vname]??array();$vres=(int)($vr['resolved']??0);$vpend=(int)($vr['pending']??0);$vprog=td_visual_width($vres,TD_MIN_STAT_SAMPLE); ?>
             <div class="vrow"><span class="name"><?php echo td_h($vname); ?></span><div class="vbar"><span class="vfill <?php echo $vres>=TD_MIN_STAT_SAMPLE?'ok':'info'; ?>" style="width:<?php echo number_format($vprog,2,'.',''); ?>%"></span></div><b><?php echo td_num($vres,0); ?>/30</b></div>
             <div class="validation-sub">판정 대기 <?php echo td_num($vpend,0); ?>건</div>
@@ -2429,7 +2430,6 @@ $refresh = isset($_GET['refresh']) ? max(0, min(300, (int)$_GET['refresh'])) : T
         $c=is_array($comparisonByKey[$key]??null)?$comparisonByKey[$key]:array();
         $ev=is_array($engineVersionMatrix['strategies'][$key]??null)?$engineVersionMatrix['strategies'][$key]:array();
         $eb=td_engine_match_badge($ev);$ret=$pf['average_market_return_pct']??null;$geo=td_visual_return_geometry($ret,15.0);
-        $vname=strtoupper((string)($meta['label']??$key));$vr=$visualValidationByStrategy[$vname]??array();$vres=(int)($vr['resolved']??0);$vpend=(int)($vr['pending']??0);$vprog=td_visual_width($vres,TD_MIN_STAT_SAMPLE);
         $closed=(int)($pf['closed_trades']??$c['closed_trades']??0);$win=$pf['win_rate']??$c['win_rate']??null;
         $role=strtoupper((string)($meta['role']??($key==='stc26'?'CHALLENGER':'CORE')));
       ?>
@@ -2441,8 +2441,6 @@ $refresh = isset($_GET['refresh']) ? max(0, min(300, (int)$_GET['refresh'])) : T
           <div class="metric-line"><span class="label">보유</span><div class="vbar"><span class="vfill info" style="width:<?php echo number_format(td_visual_width((float)($c['open_positions']??0),10.0),2,'.',''); ?>%"></span></div><span class="value"><?php echo td_num($c['open_positions']??0,0); ?></span></div>
           <div class="metric-line"><span class="label">완료 거래</span><div class="vbar"><span class="vfill <?php echo $closed>=30?'ok':'info'; ?>" style="width:<?php echo number_format(td_visual_width((float)$closed,30.0),2,'.',''); ?>%"></span></div><span class="value"><?php echo td_num($closed,0); ?></span></div>
           <div class="metric-line"><span class="label">승률</span><div class="vbar"><span class="vfill <?php echo is_numeric($win)&&$win>=50?'ok':'warn'; ?>" style="width:<?php echo number_format(td_visual_width((float)($win??0),100.0),2,'.',''); ?>%"></span></div><span class="value"><?php echo td_h(td_rate_text($win,1,$closed>0&&$closed<30)); ?></span></div>
-          <div class="metric-line"><span class="label">검증</span><div class="vbar"><span class="vfill <?php echo $vres>=30?'ok':'info'; ?>" style="width:<?php echo number_format($vprog,2,'.',''); ?>%"></span></div><span class="value"><?php echo td_num($vres,0); ?>/30</span></div>
-          <div class="validation-sub" style="margin-left:0">판정 대기 <?php echo td_num($vpend,0); ?>건</div>
         </div>
       <?php endforeach; ?>
       </div>
