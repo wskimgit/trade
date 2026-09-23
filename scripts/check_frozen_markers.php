@@ -9,12 +9,12 @@ $expected = [
     'trade_runner.php' => 'trade-low-load-runner-v145-execution-truth-strategy-freshness-watchdog-20260922-r4',
     'trade_runner_control.php' => 'trade-low-load-runner-web-control-v145-startup-health-detail-20260922-r3',
     'trade_dashboard.php' => 'trade-dashboard-v349-dedicated-export-route-20260923-r1',
-    'trade_3plus1_preflight.php' => 'trade-3plus1-preflight-v1314-dedicated-export-contract-20260923-r1',
+    'trade_3plus1_preflight.php' => 'trade-3plus1-preflight-v1315-export-full-config-contract-20260923-r1',
     'dts.php' => 'dts-v254-market-timezone-hard-stale-recovery-contract-20260912-r1',
     'abc.php' => 'abc-v542-market-timezone-bar-date-20260912-r1',
     'das.php' => 'das-v303-market-timezone-data-timestamp-20260912-r1',
     'stc26.php' => 'stc26-v301-daily-opportunity-shadow-20260910-r1',
-    'trade_export.php' => 'trade-export-v100-dedicated-mobile-safe-download-20260923-r1',
+    'trade_export.php' => 'trade-export-v101-full-engine-config-mobile-safe-download-20260923-r1',
 ];
 
 $errors = [];
