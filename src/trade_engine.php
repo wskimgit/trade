@@ -1,7 +1,7 @@
 <?php
 /**
  * trade_engine.php
- * Unified Trade Engine v4.4.4 — 3+1 v1.4 · daily cache content-freshness · active-position exit freshness/recovery · market-timezone
+ * Unified Trade Engine v4.4.6 — 3+1 v1.4 · SELL exchange provenance recovery · daily cache content-freshness · active-position exit freshness/recovery
  * PHP 7.4 compatible
  *
  * 역할
@@ -24,8 +24,8 @@ error_reporting(E_ALL);
 @ini_set('memory_limit', '192M');
 @set_time_limit(0);
 
-const TE_VERSION = 'v4.4.5 3+1-v1.4 · RUNTIME-AUTHORITY-UNIFIED · DAILY-CONTENT-FRESHNESS · EXIT-FRESHNESS-RECOVERY · KR-US-JP';
-const TE_REV = 'trade-engine-v445-single-file-runtime-authority-20260922-r2';
+const TE_VERSION = 'v4.4.6 3+1-v1.4 · SELL-EXCHANGE-PROVENANCE · RUNTIME-AUTHORITY-UNIFIED · DAILY-CONTENT-FRESHNESS · EXIT-FRESHNESS-RECOVERY · KR-US-JP';
+const TE_REV = 'trade-engine-v446-sell-exchange-provenance-20260923-r1';
 const TE_SCHEMA = 'te_v25';
 const TE_QUOTE_FRESH_MAX_AGE = 300;
 const TE_QUOTE_SCAN_MAX_AGE_KR = 300;
@@ -619,7 +619,7 @@ function te_tick(array $c): array
             $exit=te_validate_exit_result($exit);$diag['position_exit_checked']++;
             if($exit['action']==='SELL'){
                 $diag['position_exit_sell']++;
-                $ctxForOrder=$ctx?:['market'=>$p['market'],'symbol'=>$p['symbol'],'name'=>$p['name']??$p['symbol'],'exchange'=>$p['exchange']??'','session_date'=>te_session_date((string)$p['market']),'meta'=>['price_source'=>'RISK','data_sources'=>[],'required_timeframes'=>[],'quote_timestamp'=>(int)($q['ts']??0),'tick_id'=>$tick]];
+                $ctxForOrder=te_sell_order_context($ctx,$p,$q,$tick);
                 $vr=te_validation_register_exit_signal($c,$ctxForOrder,$exit,$p);if(!empty($vr['id']))$ctxForOrder['validation_id']=(string)$vr['id'];
                 $intent=te_make_intent($c,$ctxForOrder,'SELL',(int)$p['qty'],(float)$q['price'],0.0,0.0,(string)($exit['code']??'SELL'),(string)($exit['reason']??$exit['code']??'청산'),(string)($p['scenario_id']??''));
                 if(te_append_intent($c,$intent)){$diag['sell_intent']++;if(!empty($exit['risk_exit']))$diag['risk_exit']++;$positions[$key]['pending_sell_order_id']=$intent['order_id'];$sellMarkets[(string)$p['market']]=true;}
@@ -768,8 +768,9 @@ function te_priority_tick(array $c, string $market, string $symbol): array
                 $exit = te_validate_exit_result($exit);
                 if ($exit['action'] === 'SELL') {
                     $ctx['exit_urgent']=!empty($exit['urgent_exit'])||!empty($exit['risk_exit']);
+                    $sellCtx=te_sell_order_context($ctx,$positions[$key],$q,$tick);
                     $intent = te_make_intent(
-                        $c, $ctx, 'SELL', (int)$positions[$key]['qty'], (float)$q['price'], 0.0, 0.0,
+                        $c, $sellCtx, 'SELL', (int)$positions[$key]['qty'], (float)$q['price'], 0.0, 0.0,
                         (string)($exit['code'] ?? 'SELL'), (string)($exit['reason'] ?? '청산'), (string)($positions[$key]['scenario_id'] ?? '')
                     );
                     if (te_append_intent($c, $intent)) {
@@ -1142,6 +1143,40 @@ function te_intent_ttl_by_side(array $c, string $side, string $type = '', string
 {
     if (strtoupper($side) === 'SELL') return max(86400, (int)($c['sell_intent_ttl_sec'] ?? TE_SELL_INTENT_TTL_SEC));
     return te_intent_ttl($c);
+}
+
+// SELL_EXCHANGE_POSITION_FALLBACK
+// A position is already Broker-confirmed execution state.  If a later quote/context
+// loses venue metadata, preserve the position venue before signing a SELL intent.
+function te_sell_order_context(array $ctx,array $position,array $quote=[],string $tick=''): array
+{
+    $market=(string)($ctx['market']??$position['market']??'');
+    $symbol=(string)($ctx['symbol']??$position['symbol']??'');
+    $name=(string)($ctx['name']??$position['name']??$symbol);
+    if($ctx===[]){
+        $ctx=[
+            'market'=>$market,'symbol'=>$symbol,'name'=>$name,
+            'exchange'=>(string)($position['exchange']??''),
+            'session_date'=>$market!==''?te_session_date($market):date('Y-m-d'),
+            'meta'=>[
+                'price_source'=>'RISK','data_sources'=>[],'required_timeframes'=>[],
+                'quote_timestamp'=>(int)($quote['ts']??0),'tick_id'=>$tick,
+            ],
+        ];
+    }else{
+        if(trim((string)($ctx['market']??''))==='')$ctx['market']=$market;
+        if(trim((string)($ctx['symbol']??''))==='')$ctx['symbol']=$symbol;
+        if(trim((string)($ctx['name']??''))==='')$ctx['name']=$name;
+        if(trim((string)($ctx['session_date']??''))===''&&$market!=='')$ctx['session_date']=te_session_date($market);
+        if(!is_array($ctx['meta']??null))$ctx['meta']=[];
+        if(!isset($ctx['meta']['quote_timestamp']))$ctx['meta']['quote_timestamp']=(int)($quote['ts']??0);
+        if(!isset($ctx['meta']['tick_id'])||$ctx['meta']['tick_id']==='')$ctx['meta']['tick_id']=$tick;
+    }
+    if(trim((string)($ctx['exchange']??''))===''&&trim((string)($position['exchange']??''))!==''){
+        $ctx['exchange']=(string)$position['exchange'];
+        $ctx['meta']['sell_exchange_recovered_from_position']=true;
+    }
+    return $ctx;
 }
 
 function te_make_intent(array $c,array $ctx,string $side,int $qty,float $price,float $stop,float $target,string $type,string $reason,string $scenario): array
