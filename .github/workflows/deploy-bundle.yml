@@ -22,26 +22,28 @@ jobs:
           cp src/trade_broker.php bundle/
           cp src/trade_runner.php bundle/
           cp src/trade_runner_control.php bundle/
+          cp src/trade_runner_preflight.php bundle/
           cp src/trade_3plus1_preflight.php bundle/
           cp tests/regression_order_path_recovery.php bundle/
           (
             cd bundle
-            sha256sum trade_engine.php trade_broker.php trade_runner.php trade_runner_control.php trade_3plus1_preflight.php > SHA256SUMS.txt
+            sha256sum trade_engine.php trade_broker.php trade_runner.php trade_runner_control.php trade_runner_preflight.php trade_3plus1_preflight.php > SHA256SUMS.txt
           )
           cat > bundle/DEPLOY_README.txt <<'EOF'
           Trade 3+1 order-path recovery deployment bundle
           Date: 2026-09-23
 
-          Replace these five operational files in /volume1/web:
+          Replace these six operational files in /volume1/web:
           - trade_engine.php
           - trade_broker.php
           - trade_runner.php
           - trade_runner_control.php
+          - trade_runner_preflight.php
           - trade_3plus1_preflight.php
 
           Required sequence:
-          1) Back up the existing five files.
-          2) Replace the five files together as one coherent set.
+          1) Back up the existing six files.
+          2) Replace the six files together as one coherent set.
           3) In trade_runner_control.php: STOP, wait for STOPPED, then START.
           4) Confirm installed Runner and daemon both report v1.4.6.
           5) Run trade_3plus1_preflight.php and require PASS.
