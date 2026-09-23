@@ -11,7 +11,7 @@ Current ChatGPT → Codex handoff inventory.
 | src/trade_runner.php | v1.4.5 / strategy-freshness-watchdog r4 | IMPORTED |
 | src/trade_runner_control.php | v1.4.5 / startup-health-detail r3 | IMPORTED |
 | src/trade_dashboard.php | v3.4.9 / trade-dashboard-v349-dedicated-export-route-20260923-r1 | IMPORTED |
-| src/trade_3plus1_preflight.php | v1.3.14 / trade-3plus1-preflight-v1314-dedicated-export-contract-20260923-r1 | IMPORTED |\n| src/trade_export.php | v1.0.0 / trade-export-v100-dedicated-mobile-safe-download-20260923-r1 | IMPORTED |
+| src/trade_3plus1_preflight.php | v1.3.15 / trade-3plus1-preflight-v1315-export-full-config-contract-20260923-r1 | IMPORTED |\n| src/trade_export.php | v1.0.1 / trade-export-v101-full-engine-config-mobile-safe-download-20260923-r1 | IMPORTED |
 | src/trade_validation.php | v1.3.1 / trade-validation-v131-explicit-legacy-recovery-wal-20260921-r1 | IMPORTED |
 | src/trade_list.php | v1.9.0 / trade_universe_contract_v2 | IMPORTED |
 | src/dts.php | dts-v254-market-timezone-hard-stale-recovery-contract-20260912-r1 | IMPORTED |
