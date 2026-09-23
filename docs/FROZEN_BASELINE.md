@@ -30,8 +30,8 @@ The minimal recovery line is:
 - Runner v1.4.6 — `trade-low-load-runner-v146-approval-actionable-gate-20260923-r1`
 - Runner Control v1.4.6 — `trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1`
 - Runner Status v1.4.6 — `trade-low-load-runner-status-v146-execution-truth-20260923-r1`
-- Dashboard v3.4.11 — `trade-dashboard-v3411-header-cleanup-20260923-r1`
-- Preflight v1.3.18 — `trade-3plus1-preflight-v1318-dashboard-header-cleanup-20260923-r1`
+- Dashboard v3.4.11 — `trade-dashboard-v3411-header-cleanup-20260923-r2`
+- Preflight v1.3.18 — `trade-3plus1-preflight-v1318-dashboard-header-cleanup-20260923-r2`
 - Export v1.0.1 — `trade-export-v101-full-engine-config-mobile-safe-download-20260923-r1`
 
 Validation and all four strategy files are unchanged.
