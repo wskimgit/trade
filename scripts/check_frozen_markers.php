@@ -4,12 +4,12 @@ declare(strict_types=1);
 $root = dirname(__DIR__) . '/src';
 
 $expected = [
-    'trade_engine.php' => 'trade-engine-v445-single-file-runtime-authority-20260922-r2',
-    'trade_broker.php' => 'trade-broker-v597-single-file-runtime-authority-20260922-r2',
-    'trade_runner.php' => 'trade-low-load-runner-v145-execution-truth-strategy-freshness-watchdog-20260922-r4',
-    'trade_runner_control.php' => 'trade-low-load-runner-web-control-v145-startup-health-detail-20260922-r3',
+    'trade_engine.php' => 'trade-engine-v446-sell-exchange-provenance-20260923-r1',
+    'trade_broker.php' => 'trade-broker-v598-exchange-map-recovery-20260923-r1',
+    'trade_runner.php' => 'trade-low-load-runner-v146-approval-actionable-gate-20260923-r1',
+    'trade_runner_control.php' => 'trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1',
     'trade_dashboard.php' => 'trade-dashboard-v349-dedicated-export-route-20260923-r1',
-    'trade_3plus1_preflight.php' => 'trade-3plus1-preflight-v1315-export-full-config-contract-20260923-r1',
+    'trade_3plus1_preflight.php' => 'trade-3plus1-preflight-v1316-order-path-recovery-contract-20260923-r1',
     'dts.php' => 'dts-v254-market-timezone-hard-stale-recovery-contract-20260912-r1',
     'abc.php' => 'abc-v542-market-timezone-bar-date-20260912-r1',
     'das.php' => 'das-v303-market-timezone-data-timestamp-20260912-r1',
