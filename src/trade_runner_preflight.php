@@ -14,7 +14,7 @@ date_default_timezone_set('Asia/Seoul');
 error_reporting(E_ALL);
 
 const PF_VERSION='v1.4.6';
-const PF_REV='trade-low-load-runner-web-preflight-v146-dashboard-header-cleanup-20260923-r6';
+const PF_REV='trade-low-load-runner-web-preflight-v146-dashboard-header-cleanup-20260923-r7';
 
 function pf_add(array &$checks,string $name,bool $ok,$detail='',string $severity='hard'): void {
     $checks[]=['name'=>$name,'ok'=>$ok,'severity'=>$severity,'detail'=>$detail];
@@ -79,7 +79,7 @@ pf_add($checks,'Broker v5.9.10 identity',pf_source_has($base.'/trade_broker.php'
 pf_add($checks,'Runner v1.4.6 identity',pf_source_has($base.'/trade_runner.php','trade-low-load-runner-v146-approval-actionable-gate-20260923-r1'),'approval/actionable gate');
 pf_add($checks,'Runner Control v1.4.6 identity',pf_source_has($base.'/trade_runner_control.php','trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1'),'control version gate');
 pf_add($checks,'Runner Status v1.4.6 execution truth',pf_source_has($base.'/trade_runner_status.php','trade-low-load-runner-status-v146-execution-truth-20260923-r1')&&pf_source_has($base.'/trade_runner_status.php','RUNNER_STATUS_EXECUTION_TRUTH_V1'),'status uses Broker execution truth instead of stale Canonical-only gate');
-pf_add($checks,'3+1 Preflight v1.3.18 identity',pf_source_has($base.'/trade_3plus1_preflight.php','trade-3plus1-preflight-v1318-dashboard-header-cleanup-20260923-r1'),'dashboard header cleanup contract');
+pf_add($checks,'3+1 Preflight v1.3.18 identity',pf_source_has($base.'/trade_3plus1_preflight.php','trade-3plus1-preflight-v1318-dashboard-header-cleanup-20260923-r2'),'dashboard header cleanup contract');
 
 $auth=pf_json($base.'/trade_phase3b_lite_v100/authority.json');
 pf_add($checks,'Authority SINGLE_FILE_PAPER',strtoupper((string)($auth['authority']??''))==='SINGLE_FILE_PAPER',$auth);
