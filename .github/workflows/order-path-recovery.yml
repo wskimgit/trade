@@ -1,0 +1,22 @@
+name: Order Path Recovery
+
+on:
+  push:
+    branches: [ main, "codex/**" ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "7.4"
+          coverage: none
+      - name: Order-path recovery regression
+        run: php tests/regression_order_path_recovery.php
