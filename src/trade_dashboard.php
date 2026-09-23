@@ -17,11 +17,11 @@ if (PHP_SAPI !== 'cli' && !headers_sent()) {
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     header('Pragma: no-cache');
     header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
-    header('X-Trade-Dashboard-Revision: trade-dashboard-v3411-header-cleanup-20260923-r1');
+    header('X-Trade-Dashboard-Revision: trade-dashboard-v3411-header-cleanup-20260923-r2');
 }
 
 const TD_VERSION = 'v3.4.11 3+1-v1.4 · HEADER-CLEANUP · VALIDATION-SINGLE-SURFACE · EXPORT-FIX · ALERT-ACK · SMART-VISUAL · LOW-LOAD · ERRC';
-const TD_REV = 'trade-dashboard-v3410-validation-single-surface-20260923-r1';
+const TD_REV = 'trade-dashboard-v3411-header-cleanup-20260923-r2';
 const TD_EXPECTED_OPERATIONAL_FILENAME = 'trade_dashboard.php';
 const TD_REFRESH_SEC = 0; // 0 = no auto refresh. Add ?refresh=60 for optional refresh.
 const TD_STRATEGY_TICK_WARN_SEC = 5400; // 30분 cron 3회(90분) 이상 미실행 시 경고.
