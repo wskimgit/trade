@@ -50,7 +50,7 @@ $check('Engine priority SELL path uses position exchange recovery',strpos($engin
 
 $broker=(string)file_get_contents(dirname(__DIR__).'/src/trade_broker.php');
 $check('Broker operational list fallback marker installed',strpos($broker,'ORDER_EXCHANGE_OPERATIONAL_LIST_FALLBACK')!==false);
-$check('Broker merge keeps operational list as fallback',strpos($broker,'array_merge($operationalTradeExchangeMap,$tradeExchangeMap,$configExchangeMap)')!==false);
+$check('Broker merge preserves numeric JP symbol keys',strpos($broker,'ORDER_EXCHANGE_NUMERIC_SYMBOL_KEY_PRESERVE')!==false&&strpos($broker,'array_replace($operationalTradeExchangeMap,$tradeExchangeMap,$configExchangeMap)')!==false);
 
 if($failures){
     fwrite(STDERR,"\n".count($failures)." failure(s):\n - ".implode("\n - ",$failures)."\n");
