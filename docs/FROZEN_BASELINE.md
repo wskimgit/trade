@@ -26,7 +26,7 @@ A live UNIFIED export showed one long-lived JP SELL order that remained PENDING 
 The minimal recovery line is:
 
 - Engine v4.4.6 — `trade-engine-v446-sell-exchange-provenance-20260923-r1`
-- Broker v5.9.9 — `trade-broker-v599-numeric-exchange-key-preserve-20260923-r1`
+- Broker v5.9.10 — `trade-broker-v5910-jpx-builtin-calendar-parity-20260923-r1`
 - Runner v1.4.6 — `trade-low-load-runner-v146-approval-actionable-gate-20260923-r1`
 - Runner Control v1.4.6 — `trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1`
 - Dashboard v3.4.9 — `trade-dashboard-v349-dedicated-export-route-20260923-r1`
@@ -51,6 +51,7 @@ Validation and all four strategy files are unchanged.
 - SESSION_CLOSED_HINT is only a wake hint for Broker-approved/submitted execution state.
 - Missing US/JP exchange metadata may be resolved only from normalized configured/operational trade-list mappings; never invented.
 - Broker exchange-map merges must preserve numeric JP symbol keys (`5803`, etc.); `array_merge()` is prohibited for these symbol-keyed maps.
+- Broker and Runner JPX calendars must agree on built-in closure dates so an exchange holiday cannot be treated as an actionable execution session.
 - New SELL intents recover venue metadata from their existing active position before intent signing when context lost it.
 - No duplicate scheduler authority.
 - No active runtime deletion while positions exist.
