@@ -1,15 +1,15 @@
 <?php
 /**
  * trade_3plus1_preflight.php
- * 3+1 Trading System v1.4 FROZEN deployment preflight v1.3.15 · ERRC · DASHBOARD-VISUAL-CONTRACT · VALIDATION-CAPABILITY-GATE · SWING-RETIREMENT-GATE · RUNNER-R4-WATCHDOG
+ * 3+1 Trading System v1.4 FROZEN deployment preflight v1.3.16 · ERRC · DASHBOARD-VISUAL-CONTRACT · VALIDATION-CAPABILITY-GATE · SWING-RETIREMENT-GATE · RUNNER-V146-APPROVAL-ACTIONABLE-GATE
  * 다운로드/보관 파일명: trade_3plus1_preflight_v1312.php
  * SWING complete-removal contract. Read-only checks only. PHP 7.4 compatible.
  */
 declare(strict_types=1);
 date_default_timezone_set('Asia/Seoul');
 
-const P3_VERSION='v1.3.15';
-const P3_REV='trade-3plus1-preflight-v1315-export-full-config-contract-20260923-r1';
+const P3_VERSION='v1.3.16';
+const P3_REV='trade-3plus1-preflight-v1316-order-path-recovery-contract-20260923-r1';
 
 function p3_read(string $f): string{return is_file($f)?(string)@file_get_contents($f):'';}
 function p3_json(string $f,array $d=[]): array{if(!is_file($f))return$d;$x=json_decode((string)@file_get_contents($f),true);return is_array($x)?$x:$d;}
@@ -157,8 +157,8 @@ $expected=[
  ['abc.php','abc-v542-market-timezone-bar-date-20260912-r1','CORE','PULLBACK_CONTINUATION'],
  ['das.php','das-v303-market-timezone-data-timestamp-20260912-r1','CORE','RELATIVE_STRENGTH'],
  ['stc26.php','stc26-v301-daily-opportunity-shadow-20260910-r1','CHALLENGER','OVERSOLD_REVERSAL'],
- ['trade_engine.php','trade-engine-v445-single-file-runtime-authority-20260922-r2','',''],
- ['trade_broker.php','trade-broker-v597-single-file-runtime-authority-20260922-r2','',''],
+ ['trade_engine.php','trade-engine-v446-sell-exchange-provenance-20260923-r1','',''],
+ ['trade_broker.php','trade-broker-v598-exchange-map-recovery-20260923-r1','',''],
  ['trade_dashboard.php','trade-dashboard-v349-dedicated-export-route-20260923-r1','',''],
 ];
 foreach($expected as$e){$r=p3_check_source($root,$e[0],$e[1],$e[2],$e[3]);$checks[]=$r;if(!$r['ok'])$ok=false;}
@@ -240,6 +240,10 @@ $add('Engine bounded logs',strpos($engine,'TE_LOG_MAX_BYTES = 2097152')!==false&
 $add('Broker PAPER stuck SELL recovery',strpos($broker,'TB_PAPER_STUCK_SELL_RECOVERY_SEC=900')!==false&&strpos($broker,'PAPER_STUCK_SELL_STALE_MARK_RECOVERY')!==false,'PAPER SELL cannot remain actionable forever for quote freshness alone');
 $add('Broker auto-approval block telemetry',strpos($broker,'approval_block_reason')!==false&&strpos($broker,'approval_last_checked_at')!==false,'AUTO pending orders explain why validation prevented approval');
 $add('Broker bounded logs/archive',strpos($broker,'TB_LOG_MAX_BYTES=2097152')!==false&&strpos($broker,'TB_ARCHIVE_MAX_BYTES=8388608')!==false&&strpos($broker,'tb_rotate_file')!==false,'broker logs/archive rotate');
+$add('Engine SELL exchange provenance fallback',strpos($engine,'SELL_EXCHANGE_POSITION_FALLBACK')!==false&&strpos($engine,'te_sell_order_context')!==false,'blank SELL context venue is recovered from Broker-confirmed active position before intent signing');
+$add('Broker operational exchange-map fallback',strpos($broker,'ORDER_EXCHANGE_OPERATIONAL_LIST_FALLBACK')!==false&&strpos($broker,'operationalTradeExchangeMap')!==false,'stale TRADE_LIST_FILE override cannot erase venue metadata present in operational trade_list.php');
+$runnerControl=p3_read($root.'/trade_runner_control.php');
+$add('Runner Control v1.4.6 aligned',strpos($runnerControl,"const RC_VERSION='v1.4.6'")!==false&&strpos($runnerControl,"const RC_EXPECTED_RUNNER_VERSION='v1.4.6'")!==false&&strpos($runnerControl,'trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1')!==false,'web control START gate matches Runner v1.4.6');
 
 $add('Dashboard provisional sample gate',strpos($dash,'VALIDATION_PROVISIONAL_GATE_V1')!==false&&strpos($dash,'TD_MIN_STAT_SAMPLE = 30')!==false&&strpos($dash,'운영 성과 잠정치')!==false,'<30 samples are exploratory, not CORE evidence');
 $add('Dashboard bounded rate rendering',strpos($dash,'function td_clamp_rate')!==false&&strpos($dash,'function td_rate_text')!==false,'win/selection/overlap rates render within 0..100');
@@ -377,7 +381,7 @@ if($hb){
 
 $runnerSrc=p3_read($root.'/trade_runner.php');
 if($runnerSrc!==''){
-    $add('Low-Load Runner v1.4.5 r4',strpos($runnerSrc,"const TR_VERSION='v1.4.5'")!==false&&strpos($runnerSrc,'BROKER_EXECUTION_PLUS_CANONICAL_FALLBACK')!==false&&strpos($runnerSrc,'broker_actionable_watchdog_sec')!==false&&strpos($runnerSrc,'STRATEGY_STALE_WATCHDOG')!==false&&strpos($runnerSrc,'strategy-freshness-watchdog-20260922-r4')!==false,'installed Runner source · execution truth + actionable watchdog + strategy freshness watchdog r4');
+    $add('Low-Load Runner v1.4.6 approval-actionable gate',strpos($runnerSrc,"const TR_VERSION='v1.4.6'")!==false&&strpos($runnerSrc,'BROKER_EXECUTION_PLUS_CANONICAL_FALLBACK')!==false&&strpos($runnerSrc,'broker_actionable_watchdog_sec')!==false&&strpos($runnerSrc,'STRATEGY_STALE_WATCHDOG')!==false&&strpos($runnerSrc,'APPROVAL_BLOCK_ACTIONABLE_GATE')!==false&&strpos($runnerSrc,'trade-low-load-runner-v146-approval-actionable-gate-20260923-r1')!==false,'blocked/unapproved PENDING remains ACTIONABLE even during closed session');
     $runnerTransportContract=strpos($runnerSrc,'tr_transport_gate')!==false&&strpos($runnerSrc,"candidateReason='TRANSPORT_PENDING'")!==false&&strpos($runnerSrc,'trade_single_compat/trade_runtime')!==false&&strpos($runnerSrc,'broker_idle_full_sweep_sec')!==false;
     $add('Runner auto Broker transport contract',$runnerTransportContract,'compat transport PENDING -> Broker EVENT candidate; idle safety remains bounded');
 }
