@@ -59,7 +59,7 @@ pf_add($checks,'PHP >= 7.4',PHP_VERSION_ID>=70400,PHP_VERSION);
 
 $exact=[
  'trade_engine.php'=>'d8f51e0f958b02f10077b707ee1f86451b5716858317ddfbf695c29ddd4a0289',
- 'trade_broker.php'=>'9074a824ce84db3adfbe41903331d5691c371b1a03768acb8b133dadee35b196',
+ 'trade_broker.php'=>'50911aae3d120eb0e61c2b814e0838c10d059374fcff4c36dde8d3a9fba03f06',
  'dts.php'=>'fe226ac726485cec5df0fd324d6ae306e1e3fdfcb344ed604282079d0d574a99',
  'abc.php'=>'be44d87292a836c393b1c2b76b2c9a0381cca93996326220028c93bfa8d8ead5',
  'das.php'=>'7f314fdda15581516899223f5dbf1472aab6c08104ca9e8e0e2c5687fc066fda',
@@ -76,7 +76,7 @@ $exact=[
 foreach($exact as$f=>$want){$have=pf_sha($base.'/'.$f);pf_add($checks,'Exact '.$f,$have===$want,['expected'=>$want,'actual'=>$have,'file'=>$base.'/'.$f]);}
 
 pf_add($checks,'Engine v4.4.6 identity',pf_source_has($base.'/trade_engine.php','trade-engine-v446-sell-exchange-provenance-20260923-r1'),'SELL exchange provenance recovery');
-pf_add($checks,'Broker v5.9.8 identity',pf_source_has($base.'/trade_broker.php','trade-broker-v598-exchange-map-recovery-20260923-r1'),'operational exchange-map recovery');
+pf_add($checks,'Broker v5.9.9 identity',pf_source_has($base.'/trade_broker.php','trade-broker-v599-numeric-exchange-key-preserve-20260923-r1')&&pf_source_has($base.'/trade_broker.php','ORDER_EXCHANGE_NUMERIC_SYMBOL_KEY_PRESERVE'),'numeric JP symbol exchange-map key preservation');
 pf_add($checks,'Runner v1.4.6 identity',pf_source_has($base.'/trade_runner.php','trade-low-load-runner-v146-approval-actionable-gate-20260923-r1'),'approval/actionable gate');
 pf_add($checks,'Runner Control v1.4.6 identity',pf_source_has($base.'/trade_runner_control.php','trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1'),'control version gate');
 pf_add($checks,'3+1 Preflight v1.3.16 identity',pf_source_has($base.'/trade_3plus1_preflight.php','trade-3plus1-preflight-v1316-order-path-recovery-contract-20260923-r1'),'order-path recovery contract');
