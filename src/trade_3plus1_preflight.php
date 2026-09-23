@@ -158,7 +158,7 @@ $expected=[
  ['das.php','das-v303-market-timezone-data-timestamp-20260912-r1','CORE','RELATIVE_STRENGTH'],
  ['stc26.php','stc26-v301-daily-opportunity-shadow-20260910-r1','CHALLENGER','OVERSOLD_REVERSAL'],
  ['trade_engine.php','trade-engine-v446-sell-exchange-provenance-20260923-r1','',''],
- ['trade_broker.php','trade-broker-v598-exchange-map-recovery-20260923-r1','',''],
+ ['trade_broker.php','trade-broker-v599-numeric-exchange-key-preserve-20260923-r1','',''],
  ['trade_dashboard.php','trade-dashboard-v349-dedicated-export-route-20260923-r1','',''],
 ];
 foreach($expected as$e){$r=p3_check_source($root,$e[0],$e[1],$e[2],$e[3]);$checks[]=$r;if(!$r['ok'])$ok=false;}
@@ -241,7 +241,7 @@ $add('Broker PAPER stuck SELL recovery',strpos($broker,'TB_PAPER_STUCK_SELL_RECO
 $add('Broker auto-approval block telemetry',strpos($broker,'approval_block_reason')!==false&&strpos($broker,'approval_last_checked_at')!==false,'AUTO pending orders explain why validation prevented approval');
 $add('Broker bounded logs/archive',strpos($broker,'TB_LOG_MAX_BYTES=2097152')!==false&&strpos($broker,'TB_ARCHIVE_MAX_BYTES=8388608')!==false&&strpos($broker,'tb_rotate_file')!==false,'broker logs/archive rotate');
 $add('Engine SELL exchange provenance fallback',strpos($engine,'SELL_EXCHANGE_POSITION_FALLBACK')!==false&&strpos($engine,'te_sell_order_context')!==false,'blank SELL context venue is recovered from Broker-confirmed active position before intent signing');
-$add('Broker operational exchange-map fallback',strpos($broker,'ORDER_EXCHANGE_OPERATIONAL_LIST_FALLBACK')!==false&&strpos($broker,'operationalTradeExchangeMap')!==false,'stale TRADE_LIST_FILE override cannot erase venue metadata present in operational trade_list.php');
+$add('Broker operational exchange-map fallback',strpos($broker,'ORDER_EXCHANGE_OPERATIONAL_LIST_FALLBACK')!==false&&strpos($broker,'operationalTradeExchangeMap')!==false&&strpos($broker,'ORDER_EXCHANGE_NUMERIC_SYMBOL_KEY_PRESERVE')!==false&&strpos($broker,'array_replace($operationalTradeExchangeMap,$tradeExchangeMap,$configExchangeMap)')!==false,'stale TRADE_LIST_FILE override cannot erase venue metadata and numeric JP symbol keys are preserved');
 $runnerControl=p3_read($root.'/trade_runner_control.php');
 $add('Runner Control v1.4.6 aligned',strpos($runnerControl,"const RC_VERSION='v1.4.6'")!==false&&strpos($runnerControl,"const RC_EXPECTED_RUNNER_VERSION='v1.4.6'")!==false&&strpos($runnerControl,'trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1')!==false,'web control START gate matches Runner v1.4.6');
 
