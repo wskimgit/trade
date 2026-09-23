@@ -1,15 +1,15 @@
 <?php
 /**
  * trade_3plus1_preflight.php
- * 3+1 Trading System v1.4 FROZEN deployment preflight v1.3.14 · ERRC · DASHBOARD-VISUAL-CONTRACT · VALIDATION-CAPABILITY-GATE · SWING-RETIREMENT-GATE · RUNNER-R4-WATCHDOG
+ * 3+1 Trading System v1.4 FROZEN deployment preflight v1.3.15 · ERRC · DASHBOARD-VISUAL-CONTRACT · VALIDATION-CAPABILITY-GATE · SWING-RETIREMENT-GATE · RUNNER-R4-WATCHDOG
  * 다운로드/보관 파일명: trade_3plus1_preflight_v1312.php
  * SWING complete-removal contract. Read-only checks only. PHP 7.4 compatible.
  */
 declare(strict_types=1);
 date_default_timezone_set('Asia/Seoul');
 
-const P3_VERSION='v1.3.14';
-const P3_REV='trade-3plus1-preflight-v1314-dedicated-export-contract-20260923-r1';
+const P3_VERSION='v1.3.15';
+const P3_REV='trade-3plus1-preflight-v1315-export-full-config-contract-20260923-r1';
 
 function p3_read(string $f): string{return is_file($f)?(string)@file_get_contents($f):'';}
 function p3_json(string $f,array $d=[]): array{if(!is_file($f))return$d;$x=json_decode((string)@file_get_contents($f),true);return is_array($x)?$x:$d;}
@@ -229,7 +229,7 @@ $add('Engine unified export identity',strpos($engine,"'export_type'=>'UNIFIED'")
 $add('Engine per-strategy ChatGPT route',strpos($engine,'download_chatgpt_strategy_analysis')!==false&&strpos($engine,"chatgpt_trade_'.strtoupper(te_safe(")!==false,'strategy pages export only their own strategy payload with strategy-specific filename');
 $add('Strategy UI no longer exports unified payload',strpos($engine,'?mode=download_chatgpt_strategy_analysis')!==false&&strpos($engine,'개별 분석자료')!==false,'ABC/DTS/STC26/DAS page button is per-strategy');
 $exportSrc=p3_read($root.'/trade_export.php');
-$add('Dedicated Trade export endpoint',is_file($root.'/trade_export.php')&&strpos($exportSrc,'trade-export-v100-dedicated-mobile-safe-download-20260923-r1')!==false&&strpos($exportSrc,"Content-Disposition: attachment")!==false,'dedicated mobile-safe unified/per-strategy export endpoint installed');
+$add('Dedicated Trade export endpoint',is_file($root.'/trade_export.php')&&strpos($exportSrc,'trade-export-v101-full-engine-config-mobile-safe-download-20260923-r1')!==false&&strpos($exportSrc,"Content-Disposition: attachment")!==false,'dedicated mobile-safe unified/per-strategy export endpoint installed with full engine config');
 $add('Dashboard unified download uses dedicated export endpoint',strpos($dash,'trade_export.php?strategy=unified&mode=download')!==false&&strpos($dash,'trade_export.php?strategy=unified&mode=view')!==false,'download + inline JSON fallback available without routing through a strategy page');
 $add('Engine unified summary by strategy',strpos($engine,'summary_by_strategy')!==false&&strpos($engine,'te_unified_strategy_summary')!==false,'top-level DTS/ABC/DAS/STC26 summary available before detailed payloads');
 $add('Engine stale runtime explicit status',strpos($engine,'UNIFIED_PARTIAL_STALE')!==false&&strpos($engine,'stale_strategies')!==false,'mixed runtime snapshots are explicitly flagged, never silently treated as current');
