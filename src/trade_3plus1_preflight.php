@@ -246,6 +246,8 @@ $add('Broker operational exchange-map fallback',strpos($broker,'ORDER_EXCHANGE_O
 $add('Broker JPX built-in calendar parity',strpos($broker,'BROKER_JPX_BUILTIN_CALENDAR_PARITY')!==false&&strpos($broker,"'2026-09-21','2026-09-22','2026-09-23'")!==false&&strpos($broker,"'2027-09-20','2027-09-23'")!==false,'Broker execution calendar has the same JPX 2026/2027 closure fallback as Runner');
 $runnerControl=p3_read($root.'/trade_runner_control.php');
 $add('Runner Control v1.4.6 aligned',strpos($runnerControl,"const RC_VERSION='v1.4.6'")!==false&&strpos($runnerControl,"const RC_EXPECTED_RUNNER_VERSION='v1.4.6'")!==false&&strpos($runnerControl,'trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1')!==false,'web control START gate matches Runner v1.4.6');
+$runnerStatus=p3_read($root.'/trade_runner_status.php');
+$add('Runner Status execution-truth view',strpos($runnerStatus,'trade-low-load-runner-status-v146-execution-truth-20260923-r1')!==false&&strpos($runnerStatus,'RUNNER_STATUS_EXECUTION_TRUTH_V1')!==false&&strpos($runnerStatus,'BROKER_EXECUTION_PLUS_CANONICAL_FALLBACK')!==false,'status page reports execution order gate and MARKET_WAIT semantics without stale Canonical-only priority');
 
 $add('Dashboard provisional sample gate',strpos($dash,'VALIDATION_PROVISIONAL_GATE_V1')!==false&&strpos($dash,'TD_MIN_STAT_SAMPLE = 30')!==false&&strpos($dash,'운영 성과 잠정치')!==false,'<30 samples are exploratory, not CORE evidence');
 $add('Dashboard bounded rate rendering',strpos($dash,'function td_clamp_rate')!==false&&strpos($dash,'function td_rate_text')!==false,'win/selection/overlap rates render within 0..100');
