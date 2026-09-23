@@ -1,15 +1,15 @@
 <?php
 /**
  * trade_3plus1_preflight.php
- * 3+1 Trading System v1.4 FROZEN deployment preflight v1.3.16 · ERRC · DASHBOARD-VISUAL-CONTRACT · VALIDATION-CAPABILITY-GATE · SWING-RETIREMENT-GATE · RUNNER-V146-APPROVAL-ACTIONABLE-GATE
+ * 3+1 Trading System v1.4 FROZEN deployment preflight v1.3.17 · ERRC · DASHBOARD-VISUAL-CONTRACT · VALIDATION-CAPABILITY-GATE · SWING-RETIREMENT-GATE · RUNNER-V146-APPROVAL-ACTIONABLE-GATE
  * 다운로드/보관 파일명: trade_3plus1_preflight_v1312.php
  * SWING complete-removal contract. Read-only checks only. PHP 7.4 compatible.
  */
 declare(strict_types=1);
 date_default_timezone_set('Asia/Seoul');
 
-const P3_VERSION='v1.3.16';
-const P3_REV='trade-3plus1-preflight-v1316-order-path-recovery-contract-20260923-r1';
+const P3_VERSION='v1.3.17';
+const P3_REV='trade-3plus1-preflight-v1317-dashboard-validation-single-surface-20260923-r1';
 
 function p3_read(string $f): string{return is_file($f)?(string)@file_get_contents($f):'';}
 function p3_json(string $f,array $d=[]): array{if(!is_file($f))return$d;$x=json_decode((string)@file_get_contents($f),true);return is_array($x)?$x:$d;}
