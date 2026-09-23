@@ -1,7 +1,7 @@
 <?php
 /**
  * trade_broker.php
- * Trade Broker v5.9.7 — 3+1 v1.4 · SINGLE_FILE_PAPER runtime authority · auto-approval telemetry · PAPER recovery
+ * Trade Broker v5.9.8 — 3+1 v1.4 · exchange-map recovery · SINGLE_FILE_PAPER runtime authority · auto-approval telemetry
  * PHP 7.4 compatible
  *
  * 역할
@@ -23,8 +23,8 @@ error_reporting(E_ALL);
 @ini_set('memory_limit','128M');
 @set_time_limit(0);
 
-const TB_VERSION='v5.9.7 3PLUS1-v1.4 · RUNTIME-AUTHORITY-UNIFIED · AUTO-APPROVAL-TELEMETRY · STUCK-SELL-RECOVERY';
-const TB_REV='trade-broker-v597-single-file-runtime-authority-20260922-r2';
+const TB_VERSION='v5.9.8 3PLUS1-v1.4 · EXCHANGE-MAP-RECOVERY · RUNTIME-AUTHORITY-UNIFIED · AUTO-APPROVAL-TELEMETRY · STUCK-SELL-RECOVERY';
+const TB_REV='trade-broker-v598-exchange-map-recovery-20260923-r1';
 const TB_SCHEMA='te_v25';
 const TB_HTTP_CONNECT_TIMEOUT=5;
 const TB_HTTP_TIMEOUT=15;
@@ -112,8 +112,14 @@ function tb_config(): array
     $approvalDefault=tb_bool(tb_const('AUTO_APPROVE_VALID',false))?'auto':'manual';
     $approval=tb_approval_mode_load($approvalFile,$approvalDefault);
     $tradeListFile=(string)tb_const('TRADE_LIST_FILE',__DIR__.'/trade_list.php');
+    // ORDER_EXCHANGE_OPERATIONAL_LIST_FALLBACK
+    // A stale TRADE_LIST_FILE override must not erase venue metadata that exists in the
+    // operational list shipped beside the Broker. Explicit config remains highest priority.
+    $operationalTradeListFile=__DIR__.'/trade_list.php';
+    $operationalTradeExchangeMap=tb_trade_list_exchange_map($operationalTradeListFile);
     $tradeExchangeMap=tb_trade_list_exchange_map($tradeListFile);
     $configExchangeMap=array_merge(tb_exchange_map(tb_const('US_EXCHANGE_MAP',[])),tb_exchange_map(tb_const('JP_EXCHANGE_MAP',[])));
+    $resolvedExchangeMap=array_merge($operationalTradeExchangeMap,$tradeExchangeMap,$configExchangeMap);
     $strategyRegistry=tb_strategy_registry(tb_const('KIS_STRATEGY_REGISTRY',[]));$strategyRuntimeMap=[];foreach(array_keys($strategyRegistry)as$rk)$strategyRuntimeMap[$rk]=__DIR__.'/'.$rk.'_runtime';
     $defaultKeys=implode(',',array_keys($strategyRegistry));$legacyFiles=[];foreach(array_keys($strategyRegistry)as$key)$legacyFiles[]=$key.'.php';$defaultFiles=implode(',',array_merge(array_values($strategyRegistry),$legacyFiles));
     $requestedSymbolStrategyCount=max(1,(int)tb_const('MAX_SYMBOL_STRATEGY_COUNT',1));
@@ -135,7 +141,7 @@ function tb_config(): array
         'strategy_registry'=>$strategyRegistry,'strategy_runtime_map'=>$strategyRuntimeMap,'allowed_keys'=>tb_list(tb_const('KIS_ALLOWED_STRATEGY_KEYS',$defaultKeys)),'allowed_files'=>tb_list(tb_const('KIS_ALLOWED_STRATEGY_FILES',$defaultFiles)),
         'base_url'=>rtrim((string)tb_const('KIS_BASE_URL',''),'/'),'app_key'=>(string)tb_const('KIS_APP_KEY',''),'app_secret'=>(string)tb_const('KIS_APP_SECRET',''),
         'cano'=>(string)tb_const('KIS_CANO',''),'product'=>(string)tb_const('KIS_ACNT_PRDT_CD','01'),'mock'=>tb_bool(tb_const('KIS_MOCK',false)),
-        'trade_list_file'=>$tradeListFile,'trade_list_exchange_map'=>$tradeExchangeMap,'exchange_map'=>array_merge($tradeExchangeMap,$configExchangeMap),'us_exchange_map'=>array_merge($tradeExchangeMap,$configExchangeMap),'calendar_file'=>(string)tb_const('MARKET_CALENDAR_FILE',__DIR__.'/market_calendar.local.php'),
+        'trade_list_file'=>$tradeListFile,'operational_trade_list_file'=>$operationalTradeListFile,'trade_list_exchange_map'=>$tradeExchangeMap,'operational_trade_list_exchange_map'=>$operationalTradeExchangeMap,'exchange_map'=>$resolvedExchangeMap,'us_exchange_map'=>$resolvedExchangeMap,'calendar_file'=>(string)tb_const('MARKET_CALENDAR_FILE',__DIR__.'/market_calendar.local.php'),
     ];
 }
 function tb_const(string $n,$d){return defined($n)?constant($n):$d;}
