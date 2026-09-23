@@ -1,6 +1,6 @@
 <?php
 /**
- * TRADE DASHBOARD v3.4.8 · ERRC
+ * TRADE DASHBOARD v3.4.9 · ERRC
  * 3+1 v1.4 unified dashboard: CORE DTS/ABC/DAS + CHALLENGER STC26 + Validation/Broker. SWING removed.
  * Target: Synology DS213 Air / PHP 7.4 compatible.
  *
@@ -17,11 +17,11 @@ if (PHP_SAPI !== 'cli' && !headers_sent()) {
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     header('Pragma: no-cache');
     header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
-    header('X-Trade-Dashboard-Revision: trade-dashboard-v348-alert-ack-state-machine-20260922-r1');
+    header('X-Trade-Dashboard-Revision: trade-dashboard-v349-dedicated-export-route-20260923-r1');
 }
 
-const TD_VERSION = 'v3.4.8 3+1-v1.4 · ALERT-ACK · SMART-VISUAL · LOW-LOAD · ERRC';
-const TD_REV = 'trade-dashboard-v348-alert-ack-state-machine-20260922-r1';
+const TD_VERSION = 'v3.4.9 3+1-v1.4 · EXPORT-FIX · ALERT-ACK · SMART-VISUAL · LOW-LOAD · ERRC';
+const TD_REV = 'trade-dashboard-v349-dedicated-export-route-20260923-r1';
 const TD_EXPECTED_OPERATIONAL_FILENAME = 'trade_dashboard.php';
 const TD_REFRESH_SEC = 0; // 0 = no auto refresh. Add ?refresh=60 for optional refresh.
 const TD_STRATEGY_TICK_WARN_SEC = 5400; // 30분 cron 3회(90분) 이상 미실행 시 경고.
@@ -2321,21 +2321,21 @@ $refresh = isset($_GET['refresh']) ? max(0, min(300, (int)$_GET['refresh'])) : T
     <div class="title">
       <h1>통합 자동매매 대시보드</h1>
       <div class="header-meta">
-        <span class="strong">v3.4.8</span>
+        <span class="strong">v3.4.9</span>
         <span><?php echo td_h(strtoupper((string)td_get($brokerSummary,array('execution_mode'),'PAPER'))); ?></span>
         <span class="<?php echo td_h($visualOverallClass); ?>">● <?php echo td_h($visualOverallText); ?></span>
         <span><?php echo td_h(date('m-d H:i:s')); ?></span>
       </div>
     </div>
     <div class="row top-actions">
-      <a class="btn" href="dts.php?mode=download_chatgpt_analysis">통합 분석자료</a>
+      <a class="btn" href="trade_export.php?strategy=unified&mode=download" target="_blank" rel="noopener">통합 분석자료</a>\n      <a class="btn secondary" href="trade_export.php?strategy=unified&mode=view" target="_blank" rel="noopener">JSON 보기</a>
       <details class="download-menu">
         <summary class="btn secondary">개별 분석자료 ▾</summary>
         <div class="download-panel" role="menu" aria-label="개별 분석자료 다운로드">
-          <a class="btn secondary" role="menuitem" href="dts.php?mode=download_chatgpt_strategy_analysis">DTS 다운로드</a>
-          <a class="btn secondary" role="menuitem" href="abc.php?mode=download_chatgpt_strategy_analysis">ABC 다운로드</a>
-          <a class="btn secondary" role="menuitem" href="das.php?mode=download_chatgpt_strategy_analysis">DAS 다운로드</a>
-          <a class="btn secondary" role="menuitem" href="stc26.php?mode=download_chatgpt_strategy_analysis">STC26 다운로드</a>
+          <a class="btn secondary" role="menuitem" href="trade_export.php?strategy=dts&mode=download" target="_blank" rel="noopener">DTS 다운로드</a>
+          <a class="btn secondary" role="menuitem" href="trade_export.php?strategy=abc&mode=download" target="_blank" rel="noopener">ABC 다운로드</a>
+          <a class="btn secondary" role="menuitem" href="trade_export.php?strategy=das&mode=download" target="_blank" rel="noopener">DAS 다운로드</a>
+          <a class="btn secondary" role="menuitem" href="trade_export.php?strategy=stc26&mode=download" target="_blank" rel="noopener">STC26 다운로드</a>
         </div>
       </details>
       <a class="btn secondary" href="#broker-admin">브로커 관리</a>
@@ -2594,7 +2594,7 @@ $refresh = isset($_GET['refresh']) ? max(0, min(300, (int)$_GET['refresh'])) : T
     <details class="detail-card" id="system-info">
       <summary><span>시스템 정보</span><span class="quiet">버전 / runtime / 동결 기준</span></summary>
       <div class="detail-body"><div class="system-info">
-        <div><span class="small">Dashboard</span><br><b>v3.4.8</b><br><span class="mono small"><?php echo td_h(TD_REV); ?></span></div>
+        <div><span class="small">Dashboard</span><br><b>v3.4.9</b><br><span class="mono small"><?php echo td_h(TD_REV); ?></span></div>
         <div><span class="small">Engine</span><br><b><?php echo td_h((string)($engineVersionMatrix['installed']['short']??'-')); ?></b><br><span class="mono small"><?php echo td_h((string)($engineVersionMatrix['installed']['rev']??'-')); ?></span></div>
         <div><span class="small">Authority</span><br><b><?php echo td_h((string)td_get($brokerSummary,array('runtime_authority'),'-')); ?></b><br><span class="small">REAL=false · Low-Load Runner</span></div>
         <div><span class="small">Broker runtime</span><br><span class="mono small"><?php echo td_h((string)td_get($brokerSummary,array('runtime_path'),'-')); ?></span></div>
