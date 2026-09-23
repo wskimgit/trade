@@ -79,7 +79,7 @@ pf_add($checks,'Engine v4.4.6 identity',pf_source_has($base.'/trade_engine.php',
 pf_add($checks,'Broker v5.9.10 identity',pf_source_has($base.'/trade_broker.php','trade-broker-v5910-jpx-builtin-calendar-parity-20260923-r1')&&pf_source_has($base.'/trade_broker.php','ORDER_EXCHANGE_NUMERIC_SYMBOL_KEY_PRESERVE')&&pf_source_has($base.'/trade_broker.php','BROKER_JPX_BUILTIN_CALENDAR_PARITY'),'numeric JP symbol exchange-map preservation + JPX built-in calendar parity');
 pf_add($checks,'Runner v1.4.6 identity',pf_source_has($base.'/trade_runner.php','trade-low-load-runner-v146-approval-actionable-gate-20260923-r1'),'approval/actionable gate');
 pf_add($checks,'Runner Control v1.4.6 identity',pf_source_has($base.'/trade_runner_control.php','trade-low-load-runner-web-control-v146-approval-actionable-gate-20260923-r1'),'control version gate');
-pf_add($checks,'3+1 Preflight v1.3.16 identity',pf_source_has($base.'/trade_3plus1_preflight.php','trade-3plus1-preflight-v1316-order-path-recovery-contract-20260923-r1'),'order-path recovery contract');
+pf_add($checks,'3+1 Preflight v1.3.17 identity',pf_source_has($base.'/trade_3plus1_preflight.php','trade-3plus1-preflight-v1317-dashboard-validation-single-surface-20260923-r1'),'dashboard validation single-surface contract');
 
 $auth=pf_json($base.'/trade_phase3b_lite_v100/authority.json');
 pf_add($checks,'Authority SINGLE_FILE_PAPER',strtoupper((string)($auth['authority']??''))==='SINGLE_FILE_PAPER',$auth);
