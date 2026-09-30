@@ -20,7 +20,7 @@ const TM_DEFAULT_REPOSITORY = 'wskimgit/trade';
 const TM_DEFAULT_BASE_REF = 'main';
 const TM_DEFAULT_BRANCH = 'nas/live-trade-current';
 const TM_DEFAULT_SOURCE_ROOT = '/volume1/web';
-const TM_DEFAULT_KEY_FILE = '/volume1/.trade_pull_web_key';
+const TM_DEFAULT_KEY_FILE = '/volume1/web/.trade_pull_web_key';
 const TM_DEFAULT_LOCK_FILE = '/volume1/.trade_live_source_mirror.lock';
 const TM_DEFAULT_TOKEN_FILE = '/volume1/sis_private/github_token.txt';
 const TM_MAX_SOURCE_BYTES = 1572864;
@@ -101,7 +101,15 @@ function tm_is_https(): bool
 function tm_key_file(): string
 {
     $file = tm_path(tm_env('TRADE_PULL_WEB_KEY_FILE', TM_DEFAULT_KEY_FILE));
+    // Some DSM File Station setups expose only /volume1/web.
+    // Keep the web-key requirement, but permit the explicitly named hidden
+    // key file there when the NAS cannot create a file at /volume1.
     $webRoot = tm_path(tm_env('TRADE_MIRROR_SOURCE_ROOT', TM_DEFAULT_SOURCE_ROOT));
+    $allowedWebKey = rtrim($webRoot, '/') . '/.trade_pull_web_key';
+    $allowedWebKeyTxt = $allowedWebKey . '.txt';
+    if ($file === $allowedWebKey || $file === $allowedWebKeyTxt) {
+        return $file;
+    }
     $prefix = rtrim($webRoot, '/') . '/';
     if ($file === $webRoot || strpos($file, $prefix) === 0) {
         tm_fail('WEB_KEY_IN_WEB_ROOT');
