@@ -750,6 +750,9 @@ function pv_web_key_file(): string
     $parent = pv_allowed_parent();
     $allowedWebKey = rtrim($parent, '/') . '/.trade_pull_web_key';
     $allowedWebKeyTxt = $allowedWebKey . '.txt';
+    if ($file === $allowedWebKey && !is_file($file) && is_file($allowedWebKeyTxt)) {
+        $file = $allowedWebKeyTxt;
+    }
     if ($file === $allowedWebKey || $file === $allowedWebKeyTxt) {
         return $file;
     }
