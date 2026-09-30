@@ -23,6 +23,8 @@ const TM_DEFAULT_SOURCE_ROOT = '/volume1/web';
 const TM_DEFAULT_KEY_FILE = '/volume1/web/.trade_pull_web_key';
 const TM_DEFAULT_LOCK_FILE = '/volume1/.trade_live_source_mirror.lock';
 const TM_DEFAULT_TOKEN_FILE = '/volume1/sis_private/github_token.txt';
+const TM_DEFAULT_WEBROOT_SYNC_CONFIG = '/volume1/web/sis_private_sync_config.php';
+const TM_DEFAULT_RUNTIME_SYNC_CONFIG = '/volume1/web/runtime/sis_private_sync_config.php';
 const TM_MAX_SOURCE_BYTES = 1572864;
 const TM_GITHUB_PREFIX = 'nas/live-trade-source';
 
@@ -171,42 +173,103 @@ function tm_branch(string $value): string
     return $branch;
 }
 
+function tm_token_usable(string $token): bool
+{
+    $token = trim($token);
+    if ($token === '') {
+        return false;
+    }
+    $upper = strtoupper($token);
+    foreach (array('PASTE_', 'CHANGE_THIS', 'YOUR_TOKEN', 'TOKEN_HERE', '<TOKEN') as $prefix) {
+        if (strpos($upper, $prefix) === 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function tm_read_config_token(string $path): string
+{
+    if (!is_file($path) || !is_readable($path)) {
+        return '';
+    }
+    $level = ob_get_level();
+    @ob_start();
+    $token = '';
+    try {
+        $config = @include $path;
+        if (is_array($config) && array_key_exists('github_token', $config)) {
+            $candidate = trim((string)$config['github_token']);
+            if (tm_token_usable($candidate)) {
+                $token = $candidate;
+            }
+        }
+    } catch (Throwable $error) {
+        $token = '';
+    } finally {
+        while (ob_get_level() > $level) {
+            @ob_end_clean();
+        }
+    }
+    return $token;
+}
+
 function tm_token(): array
 {
-    $candidates = array(
+    $envCandidates = array(
         array('source' => 'TRADE_MIRROR_TOKEN', 'value' => tm_env('TRADE_MIRROR_TOKEN')),
         array('source' => 'TRADE_PULL_TOKEN', 'value' => tm_env('TRADE_PULL_TOKEN')),
         array('source' => 'SIS_GITHUB_TOKEN', 'value' => tm_env('SIS_GITHUB_TOKEN')),
     );
-    foreach ($candidates as $candidate) {
-        if ($candidate['value'] !== '') {
+    foreach ($envCandidates as $candidate) {
+        if (tm_token_usable($candidate['value'])) {
             return array('source' => $candidate['source'], 'token' => $candidate['value']);
         }
     }
-    $files = array(
+
+    $fileCandidates = array(
         array('source' => 'TRADE_MIRROR_TOKEN_FILE', 'path' => tm_env('TRADE_MIRROR_TOKEN_FILE')),
         array('source' => 'TRADE_PULL_TOKEN_FILE', 'path' => tm_env('TRADE_PULL_TOKEN_FILE')),
         array('source' => 'SIS_GITHUB_TOKEN_FILE', 'path' => tm_env('SIS_GITHUB_TOKEN_FILE')),
         array('source' => 'DEFAULT_PRIVATE_FILE', 'path' => TM_DEFAULT_TOKEN_FILE),
     );
-    foreach ($files as $candidate) {
+    foreach ($fileCandidates as $candidate) {
         $path = trim((string)$candidate['path']);
-        if ($path === '') {
+        if ($path === '' || !is_file($path) || !is_readable($path)) {
             continue;
         }
-        $path = tm_path($path);
-        $webRoot = tm_source_root();
-        $prefix = rtrim($webRoot, '/') . '/';
-        if ($path === $webRoot || strpos($path, $prefix) === 0) {
-            continue;
-        }
-        if (is_file($path) && is_readable($path)) {
-            $token = trim((string)@file_get_contents($path));
-            if ($token !== '') {
-                return array('source' => $candidate['source'], 'token' => $token);
-            }
+        $token = trim((string)@file_get_contents($path));
+        if (tm_token_usable($token)) {
+            return array('source' => $candidate['source'], 'token' => $token);
         }
     }
+
+    $configCandidates = array();
+    $envConfig = tm_env('SIS_PRIVATE_SYNC_CONFIG');
+    if ($envConfig !== '') {
+        $configCandidates[] = array('source' => 'PRIVATE_SYNC_CONFIG_ENV', 'path' => $envConfig);
+    }
+    $configCandidates[] = array(
+        'source' => 'PRIVATE_SYNC_CONFIG_WEBROOT',
+        'path' => TM_DEFAULT_WEBROOT_SYNC_CONFIG,
+    );
+    $configCandidates[] = array(
+        'source' => 'PRIVATE_SYNC_CONFIG_RUNTIME',
+        'path' => TM_DEFAULT_RUNTIME_SYNC_CONFIG,
+    );
+    $seen = array();
+    foreach ($configCandidates as $candidate) {
+        $path = trim((string)$candidate['path']);
+        if ($path === '' || isset($seen[$path])) {
+            continue;
+        }
+        $seen[$path] = true;
+        $token = tm_read_config_token($path);
+        if ($token !== '') {
+            return array('source' => $candidate['source'], 'token' => $token);
+        }
+    }
+
     return array('source' => 'NONE', 'token' => '');
 }
 
