@@ -107,6 +107,9 @@ function tm_key_file(): string
     $webRoot = tm_path(tm_env('TRADE_MIRROR_SOURCE_ROOT', TM_DEFAULT_SOURCE_ROOT));
     $allowedWebKey = rtrim($webRoot, '/') . '/.trade_pull_web_key';
     $allowedWebKeyTxt = $allowedWebKey . '.txt';
+    if ($file === $allowedWebKey && !is_file($file) && is_file($allowedWebKeyTxt)) {
+        $file = $allowedWebKeyTxt;
+    }
     if ($file === $allowedWebKey || $file === $allowedWebKeyTxt) {
         return $file;
     }
