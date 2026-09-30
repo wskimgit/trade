@@ -1,6 +1,6 @@
 <?php
 /**
- * Trade live NAS source mirror v1.0.1
+ * Trade live NAS source mirror v1.1.0
  *
  * Browser-only helper. Save it outside /volume1/web/trade, open it over HTTPS,
  * authenticate with the same web key as the Pull & VERIFY control, and mirror
@@ -15,7 +15,7 @@ date_default_timezone_set('Asia/Seoul');
 @ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
-const TM_VERSION = '1.0.1';
+const TM_VERSION = '1.1.0';
 const TM_DEFAULT_REPOSITORY = 'wskimgit/trade';
 const TM_DEFAULT_BASE_REF = 'main';
 const TM_DEFAULT_BRANCH = 'nas/live-trade-current';
@@ -340,14 +340,28 @@ function tm_github_api(string $method, string $url, string $token, ?array $body 
 function tm_file_inventory(): array
 {
     $root = tm_source_root();
+
+    $discovered = array();
+    $glob = @glob(rtrim($root, '/') . '/trade*.php');
+    if (is_array($glob)) {
+        foreach ($glob as $path) {
+            if (is_file($path)) {
+                $discovered[] = basename($path);
+            }
+        }
+    }
+    $discovered = array_values(array_unique($discovered));
+    $names = array_values(array_unique(array_merge(TM_REQUIRED_FILES, $discovered)));
     $inventory = array();
-    foreach (TM_REQUIRED_FILES as $name) {
+
+    foreach ($names as $name) {
         $file = $root . '/' . $name;
         $present = is_file($file) && is_readable($file);
         $row = array(
             'file' => $name,
             'path' => $file,
             'present' => $present,
+            'required' => in_array($name, TM_REQUIRED_FILES, true),
             'bytes' => $present ? (int)@filesize($file) : 0,
             'sha256' => '',
         );
@@ -363,26 +377,27 @@ function tm_file_inventory(): array
         }
         $inventory[] = $row;
     }
-    $discovered = array();
-    $glob = @glob(rtrim($root, '/') . '/trade*.php');
-    if (is_array($glob)) {
-        foreach ($glob as $path) {
-            if (is_file($path)) {
-                $discovered[] = basename($path);
-            }
+
+    $requiredPresent = 0;
+    foreach ($inventory as $row) {
+        if (!empty($row['required']) && !empty($row['present'])) {
+            $requiredPresent++;
         }
     }
     $allow = array_fill_keys(TM_REQUIRED_FILES, true);
-    $unlisted = array_values(array_diff(array_unique($discovered), array_keys($allow)));
+    $unlisted = array_values(array_diff($discovered, array_keys($allow)));
+
     return array(
         'root' => $root,
         'files' => $inventory,
         'all_trade_php' => $discovered,
         'unlisted_trade_php' => $unlisted,
         'required_count' => count(TM_REQUIRED_FILES),
+        'required_present_count' => $requiredPresent,
         'present_count' => count(array_filter($inventory, function ($row) {
             return !empty($row['present']);
         })),
+        'discovered_count' => count($discovered),
     );
 }
 
@@ -509,11 +524,8 @@ function tm_mirror(array $inventory): array
     $repo = tm_repository();
     $base = tm_env('TRADE_MIRROR_BASE_REF', TM_DEFAULT_BASE_REF);
     $branch = tm_branch('');
-    if ($inventory['present_count'] !== count(TM_REQUIRED_FILES)) {
+    if ($inventory['required_present_count'] !== count(TM_REQUIRED_FILES)) {
         tm_fail('REQUIRED_SOURCE_MISSING');
-    }
-    if (!empty($inventory['unlisted_trade_php'])) {
-        tm_fail('UNLISTED_TRADE_PHP_PRESENT', implode(',', $inventory['unlisted_trade_php']));
     }
     $tokenInfo = tm_token();
     if ($tokenInfo['token'] === '') {
@@ -649,11 +661,13 @@ function tm_render(string $message = '', ?array $result = null): void
     echo '<div class="row"><span>소스 경로</span><span class="value"><code>'
         . tm_h($inventory['root']) . '</code></span></div>';
     echo '<div class="row"><span>필수 파일</span><span class="value">'
-        . tm_h($inventory['present_count'] . '/' . $inventory['required_count']) . '</span></div>';
+        . tm_h($inventory['required_present_count'] . '/' . $inventory['required_count']) . '</span></div>';
+    echo '<div class="row"><span>발견된 trade*.php</span><span class="value">'
+        . tm_h($inventory['discovered_count']) . '개</span></div>';
     echo '<div class="row"><span>GitHub token</span><span class="value">'
         . tm_h($tokenInfo['source'] !== 'NONE' ? '설정됨' : '없음') . '</span></div>';
     if (!empty($inventory['unlisted_trade_php'])) {
-        echo '<p class="warn">allowlist 밖 trade*.php: <code>'
+        echo '<p class="ok">추가로 발견된 trade*.php도 전체 미러링 대상에 포함됩니다: <code>'
             . tm_h(implode(', ', $inventory['unlisted_trade_php'])) . '</code></p>';
     }
     echo '<pre>' . tm_h(tm_json($inventory['files'], true)) . '</pre></section>';
