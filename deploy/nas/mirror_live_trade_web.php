@@ -1,6 +1,6 @@
 <?php
 /**
- * Trade live NAS source mirror v1.0.0
+ * Trade live NAS source mirror v1.0.1
  *
  * Browser-only helper. Save it outside /volume1/web/trade, open it over HTTPS,
  * authenticate with the same web key as the Pull & VERIFY control, and mirror
@@ -15,7 +15,7 @@ date_default_timezone_set('Asia/Seoul');
 @ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
-const TM_VERSION = '1.0.0';
+const TM_VERSION = '1.0.1';
 const TM_DEFAULT_REPOSITORY = 'wskimgit/trade';
 const TM_DEFAULT_BASE_REF = 'main';
 const TM_DEFAULT_BRANCH = 'nas/live-trade-current';
