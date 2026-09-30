@@ -22,7 +22,7 @@ const PV_DEFAULT_REPOSITORY = 'wskimgit/trade';
 const PV_DEFAULT_REF = 'main';
 const PV_DEFAULT_TARGET = '/volume1/web/trade';
 const PV_DEFAULT_ALLOWED_PARENT = '/volume1/web';
-const PV_DEFAULT_WEB_KEY_FILE = '/volume1/.trade_pull_web_key';
+const PV_DEFAULT_WEB_KEY_FILE = '/volume1/web/.trade_pull_web_key';
 const PV_DEFAULT_WEB_LOCK_FILE = '/volume1/.trade_pull_verify_web.lock';
 const PV_MAX_SOURCE_BYTES = 1572864;
 
@@ -744,7 +744,15 @@ function pv_web_key_file(): string
     $file = pv_normalize_path(
         pv_env('TRADE_PULL_WEB_KEY_FILE', PV_DEFAULT_WEB_KEY_FILE)
     );
+    // Some DSM File Station setups expose only /volume1/web.
+    // Keep the web-key requirement, but permit the explicitly named hidden
+    // key file there when the NAS cannot create a file at /volume1.
     $parent = pv_allowed_parent();
+    $allowedWebKey = rtrim($parent, '/') . '/.trade_pull_web_key';
+    $allowedWebKeyTxt = $allowedWebKey . '.txt';
+    if ($file === $allowedWebKey || $file === $allowedWebKeyTxt) {
+        return $file;
+    }
     $prefix = rtrim($parent, '/') . '/';
     if ($file === $parent || strpos($file, $prefix) === 0) {
         pv_fail('WEB_KEY_IN_WEB_SCOPE');
