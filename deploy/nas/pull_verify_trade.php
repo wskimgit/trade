@@ -287,34 +287,97 @@ function pv_github_json(string $url, string $token): array
     return $decoded;
 }
 
-function pv_token(string $root): string
+function pv_token_is_usable(string $token): bool
 {
-    $inline = pv_env('TRADE_PULL_TOKEN', pv_env('TRADE_GITHUB_TOKEN'));
-    $file = pv_env('TRADE_PULL_TOKEN_FILE', pv_env('TRADE_GITHUB_TOKEN_FILE'));
-    if ($inline !== '' && $file !== '') {
-        pv_fail('TOKEN_SOURCE_AMBIGUOUS');
+    $token = trim($token);
+    if ($token === '') {
+        return false;
     }
-    if ($inline !== '') {
-        return $inline;
+    $upper = strtoupper($token);
+    foreach (array('PASTE_', 'CHANGE_THIS', 'YOUR_TOKEN', 'TOKEN_HERE', '<TOKEN') as $prefix) {
+        if (strpos($upper, $prefix) === 0) {
+            return false;
+        }
     }
-    if ($file === '') {
+    return true;
+}
+
+function pv_read_config_token(string $path): string
+{
+    if (!is_file($path) || !is_readable($path)) {
         return '';
     }
-    $file = pv_normalize_path($file);
-    $parent = pv_allowed_parent();
-    $parentPrefix = rtrim($parent, '/') . '/';
-    if ($file === $parent || strpos($file, $parentPrefix) === 0
-        || strpos($file, rtrim($root, '/') . '/') === 0) {
-        pv_fail('TOKEN_FILE_IN_WEB_SCOPE');
-    }
-    if (!is_file($file) || !is_readable($file)) {
-        pv_fail('TOKEN_FILE_NOT_READABLE');
-    }
-    $token = trim((string)@file_get_contents($file));
-    if ($token === '') {
-        pv_fail('TOKEN_FILE_EMPTY');
+    $level = ob_get_level();
+    @ob_start();
+    $token = '';
+    try {
+        $config = @include $path;
+        if (is_array($config) && array_key_exists('github_token', $config)) {
+            $candidate = trim((string)$config['github_token']);
+            if (pv_token_is_usable($candidate)) {
+                $token = $candidate;
+            }
+        }
+    } catch (Throwable $error) {
+        $token = '';
+    } finally {
+        while (ob_get_level() > $level) {
+            @ob_end_clean();
+        }
     }
     return $token;
+}
+
+function pv_token(string $root): string
+{
+    $envCandidates = array(
+        pv_env('TRADE_PULL_TOKEN'),
+        pv_env('TRADE_GITHUB_TOKEN'),
+        pv_env('SIS_GITHUB_TOKEN'),
+    );
+    foreach ($envCandidates as $token) {
+        if (pv_token_is_usable($token)) {
+            return trim($token);
+        }
+    }
+
+    $fileCandidates = array(
+        pv_env('TRADE_PULL_TOKEN_FILE'),
+        pv_env('TRADE_GITHUB_TOKEN_FILE'),
+        pv_env('SIS_GITHUB_TOKEN_FILE'),
+        '/volume1/sis_private/github_token.txt',
+    );
+    foreach ($fileCandidates as $file) {
+        $file = trim((string)$file);
+        if ($file === '' || !is_file($file) || !is_readable($file)) {
+            continue;
+        }
+        $token = trim((string)@file_get_contents($file));
+        if (pv_token_is_usable($token)) {
+            return $token;
+        }
+    }
+
+    $configCandidates = array();
+    $envConfig = pv_env('SIS_PRIVATE_SYNC_CONFIG');
+    if ($envConfig !== '') {
+        $configCandidates[] = $envConfig;
+    }
+    $configCandidates[] = '/volume1/web/sis_private_sync_config.php';
+    $configCandidates[] = '/volume1/web/runtime/sis_private_sync_config.php';
+    $seen = array();
+    foreach ($configCandidates as $file) {
+        $file = trim((string)$file);
+        if ($file === '' || isset($seen[$file])) {
+            continue;
+        }
+        $seen[$file] = true;
+        $token = pv_read_config_token($file);
+        if ($token !== '') {
+            return $token;
+        }
+    }
+    return '';
 }
 
 function pv_requested_ref(): string
