@@ -25,3 +25,7 @@ jobs:
       - name: Lint pull verifier
         shell: bash
         run: php -l deploy/nas/pull_verify_trade.php
+
+      - name: Lint live source mirror
+        shell: bash
+        run: php -l deploy/nas/mirror_live_trade_web.php
