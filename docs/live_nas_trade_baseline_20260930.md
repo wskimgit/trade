@@ -37,7 +37,7 @@ All entries below were PASS with matching expected/actual SHA-256:
 | File | SHA-256 |
 |---|---|
 | `trade_engine.php` | `c2f29a6aa784b73f2fa4d36eef34b376180aa8c921480cc9a17595459fd46a6c` |
-| `trade_broker.php` | `2f346e3c686dfc6cfe477912847a1c615f2a763abb3b1538c6b8c23ef91333` |
+| `trade_broker.php` | `2f346e3c686dfc6cfe477912847a1c615f2a763abb3b1538c8b6c8b23ef91333` |
 | `dts.php` | `fe226ac726485cec5df0fd324d6ae306e1e3fdfcb344ed604282079d0d574a99` |
 | `abc.php` | `be44d87292a836c393b1c2b76b2c9a0381cca93996326220028c93bfa8d8ead5` |
 | `das.php` | `7f314fdda15581516899223f5dbf1472aab6c08104ca9e8e0e2c5687fc066fda` |
