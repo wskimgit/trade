@@ -1,0 +1,23 @@
+Options -Indexes
+
+# Defense in depth for Apache/Web Station. Nginx deployments must add the
+# equivalent deny rules in Web Station or the reverse proxy configuration.
+<IfModule mod_authz_core.c>
+    <FilesMatch "(^\.|\.json$|\.log$|\.lock$|\.tmp$|\.bak$|\.secret$|\.pid$|\.stop$)">
+        Require all denied
+    </FilesMatch>
+    <Files "trade_runner_control.php">
+        Require all denied
+    </Files>
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    <FilesMatch "(^\.|\.json$|\.log$|\.lock$|\.tmp$|\.bak$|\.secret$|\.pid$|\.stop$)">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+    <Files "trade_runner_control.php">
+        Order allow,deny
+        Deny from all
+    </Files>
+</IfModule>
