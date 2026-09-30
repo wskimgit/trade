@@ -14,6 +14,9 @@ date_default_timezone_set('Asia/Seoul');
 error_reporting(E_ALL);
 
 const PV_VERSION = '1.1.0';
+// Safety lock: the live NAS source is newer than GitHub main. Codex must
+// mirror and review nas/live-trade-current before enabling pull/upgrade.
+const PV_SOURCE_ALIGNMENT_READY = false;
 const PV_MANAGED_BY = 'codex/trade-pull-verify';
 const PV_DEFAULT_REPOSITORY = 'wskimgit/trade';
 const PV_DEFAULT_REF = 'main';
@@ -559,6 +562,9 @@ function pv_commit_stage(string $root, string $stage, array $items, array $expec
 
 function pv_pull(bool $upgrade): int
 {
+    if (!PV_SOURCE_ALIGNMENT_READY) {
+        pv_fail('SOURCE_ALIGNMENT_PENDING_MIRROR_LIVE_NAS_FIRST');
+    }
     $root = pv_target_root();
     $isUpdate = pv_prepare_target($root, $upgrade);
     $repository = pv_env('TRADE_PULL_REPOSITORY', PV_DEFAULT_REPOSITORY);
@@ -969,6 +975,10 @@ function pv_web_render(string $message = '', ?array $result = null): void
     echo '<h1>Trade Pull &amp; VERIFY</h1>';
     echo '<p class="muted">브라우저 전용 · 독립 경로 <code>'
         . pv_web_h(PV_DEFAULT_TARGET) . '</code> · PAPER 전용</p>';
+    if (!PV_SOURCE_ALIGNMENT_READY) {
+        echo '<div class="notice warn">현재 GitHub 소스가 라이브 NAS보다 오래되어 설치가 잠겨 있습니다. '
+            . '먼저 mirror_live_trade_web.php로 NAS 소스를 별도 브랜치에 미러링한 뒤 Codex 검토를 완료하십시오.</div>';
+    }
 
     if (!$https && !pv_bool('TRADE_PULL_ALLOW_HTTP', false)) {
         echo '<div class="notice warn">HTTPS 주소로 접속해야 웹 키와 작업 요청이 허용됩니다.</div>';
